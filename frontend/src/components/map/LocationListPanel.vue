@@ -1,0 +1,394 @@
+<script setup>
+import { computed, ref, watch } from 'vue'
+
+import { formatDistance } from '@/utils/geo'
+
+const PAGE_WINDOW_SIZE = 5
+
+const props = defineProps({
+  locations: {
+    type: Array,
+    default: () => [],
+  },
+  selectedLocationId: {
+    type: [String, Number],
+    default: null,
+  },
+  loading: {
+    type: Boolean,
+    default: false,
+  },
+  refreshing: {
+    type: Boolean,
+    default: false,
+  },
+  hasActiveFilter: {
+    type: Boolean,
+    default: false,
+  },
+  mode: {
+    type: String,
+    default: 'viewport',
+  },
+  searchKeyword: {
+    type: String,
+    default: '',
+  },
+  totalCount: {
+    type: Number,
+    default: 0,
+  },
+  currentPage: {
+    type: Number,
+    default: 1,
+  },
+  totalPages: {
+    type: Number,
+    default: 0,
+  },
+})
+
+const emit = defineEmits(['select-location', 'change-page'])
+
+const listElement = ref(null)
+
+const displayCount = computed(() => props.totalCount || props.locations.length)
+const headerLabel = computed(() => {
+  if (props.mode === 'keyword') return `'${props.searchKeyword.trim()}' 검색 결과`
+  if (props.mode === 'nationwide') return '전국 여행지'
+  if (props.mode === 'area') return '선택한 지역 여행지'
+
+  return '이 지역 여행지'
+})
+const pageNumbers = computed(() => {
+  if (props.totalPages <= 1) return []
+
+  const half = Math.floor(PAGE_WINDOW_SIZE / 2)
+  const start = Math.max(1, Math.min(props.currentPage - half, props.totalPages - PAGE_WINDOW_SIZE + 1))
+  const end = Math.min(props.totalPages, start + PAGE_WINDOW_SIZE - 1)
+
+  return Array.from({ length: end - start + 1 }, (_, index) => start + index)
+})
+
+function changePage(page) {
+  if (props.refreshing || page < 1 || page > props.totalPages || page === props.currentPage) return
+
+  emit('change-page', page)
+}
+
+watch(
+  () => props.currentPage,
+  () => {
+    listElement.value?.scrollTo?.({ top: 0 })
+  },
+)
+</script>
+
+<template>
+  <section class="location-list-panel">
+    <header class="location-list-panel__header">
+      <div>
+        <p class="location-list-panel__eyebrow">{{ headerLabel }}</p>
+
+        <h2 class="location-list-panel__count">총 {{ displayCount.toLocaleString('ko-KR') }}개</h2>
+      </div>
+
+      <p v-if="refreshing" class="location-list-panel__refreshing" role="status">
+        <span class="location-list-panel__refresh-spinner" aria-hidden="true" />
+        이 영역 업데이트 중
+      </p>
+    </header>
+
+    <div v-if="loading" class="location-list-panel__state">여행지를 불러오는 중입니다.</div>
+
+    <div v-else-if="locations.length === 0" class="location-list-panel__state">
+      <strong>표시할 여행지가 없습니다.</strong>
+
+      <p v-if="hasActiveFilter">검색 조건을 변경하거나 필터를 초기화해 주세요.</p>
+
+      <p v-else>지도를 이동하거나 축소해서 다른 지역을 확인해 주세요.</p>
+    </div>
+
+    <ul v-else ref="listElement" class="location-list-panel__list">
+      <li v-for="location in locations" :key="location.id" class="location-list-panel__item">
+        <button
+          class="location-list-panel__button"
+          :class="{
+            'location-list-panel__button--active':
+              String(location.id) === String(selectedLocationId),
+          }"
+          type="button"
+          @click="emit('select-location', location)"
+        >
+          <span class="location-list-panel__marker">
+            <span class="sr-only">여행지:</span>
+          </span>
+
+          <span class="location-list-panel__content">
+            <strong class="location-list-panel__name">
+              {{ location.name }}
+            </strong>
+
+            <span class="location-list-panel__meta">
+              {{ location.category }}
+              <template v-if="location.region"> · {{ location.region }} </template>
+              <template v-if="Number.isFinite(location.distanceKm)">
+                · {{ formatDistance(location.distanceKm) }}
+              </template>
+            </span>
+
+            <span class="location-list-panel__address">
+              {{ location.address || '주소 정보 없음' }}
+            </span>
+          </span>
+
+          <span class="location-list-panel__arrow" aria-hidden="true"> › </span>
+        </button>
+      </li>
+    </ul>
+
+    <nav
+      v-if="!loading && pageNumbers.length > 0"
+      class="location-list-panel__pagination"
+      aria-label="여행지 목록 페이지"
+    >
+      <button
+        class="location-list-panel__page-button"
+        type="button"
+        aria-label="이전 페이지"
+        :disabled="refreshing || currentPage <= 1"
+        @click="changePage(currentPage - 1)"
+      >
+        ‹
+      </button>
+
+      <button
+        v-for="page in pageNumbers"
+        :key="page"
+        class="location-list-panel__page-button"
+        :class="{ 'location-list-panel__page-button--active': page === currentPage }"
+        type="button"
+        :aria-current="page === currentPage ? 'page' : undefined"
+        :disabled="refreshing"
+        @click="changePage(page)"
+      >
+        {{ page }}
+      </button>
+
+      <button
+        class="location-list-panel__page-button"
+        type="button"
+        aria-label="다음 페이지"
+        :disabled="refreshing || currentPage >= totalPages"
+        @click="changePage(currentPage + 1)"
+      >
+        ›
+      </button>
+    </nav>
+  </section>
+</template>
+
+<style scoped>
+.location-list-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.location-list-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-3);
+  flex: 0 0 auto;
+  padding: var(--spacing-6);
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.location-list-panel__eyebrow {
+  margin: 0 0 var(--spacing-1);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.location-list-panel__count {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-xl);
+}
+
+.location-list-panel__refreshing {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  flex: 0 0 auto;
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.location-list-panel__refresh-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--color-border);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: location-refresh-spin 700ms linear infinite;
+}
+
+.location-list-panel__list {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: var(--spacing-2);
+  overflow-y: auto;
+  list-style: none;
+}
+
+.location-list-panel__item + .location-list-panel__item {
+  margin-top: var(--spacing-1);
+}
+
+.location-list-panel__button {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--spacing-3);
+  width: 100%;
+  padding: var(--spacing-4);
+  color: var(--color-text-primary);
+  text-align: left;
+  background-color: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.location-list-panel__button:hover {
+  background-color: var(--color-surface-hover);
+  border-color: var(--color-border-light);
+}
+
+.location-list-panel__button--active {
+  background-color: var(--color-primary-light);
+  border-color: rgb(47 125 91 / 24%);
+}
+
+.location-list-panel__marker {
+  width: 10px;
+  height: 10px;
+  margin-top: 7px;
+  background-color: var(--color-primary);
+  border-radius: 50%;
+  box-shadow: 0 0 0 4px rgb(47 125 91 / 12%);
+}
+
+.location-list-panel__content {
+  display: grid;
+  min-width: 0;
+}
+
+.location-list-panel__name {
+  overflow: hidden;
+  font-size: var(--font-size-md);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.location-list-panel__meta {
+  margin-top: var(--spacing-1);
+  color: var(--color-primary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+}
+
+.location-list-panel__address {
+  margin-top: var(--spacing-1);
+  overflow: hidden;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.location-list-panel__arrow {
+  margin-top: 1px;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xl);
+}
+
+.location-list-panel__state {
+  display: grid;
+  flex: 1;
+  align-content: center;
+  justify-items: center;
+  gap: var(--spacing-2);
+  min-height: 260px;
+  padding: var(--spacing-8);
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.location-list-panel__state strong {
+  color: var(--color-text-primary);
+}
+
+.location-list-panel__state p {
+  max-width: 280px;
+  margin: 0;
+  font-size: var(--font-size-sm);
+}
+
+.location-list-panel__pagination {
+  display: flex;
+  flex: 0 0 auto;
+  justify-content: center;
+  gap: var(--spacing-1);
+  padding: var(--spacing-3) var(--spacing-4);
+  border-top: 1px solid var(--color-border-light);
+}
+
+.location-list-panel__page-button {
+  min-width: 34px;
+  height: 34px;
+  padding: 0 var(--spacing-2);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  background-color: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.location-list-panel__page-button:hover:not(:disabled) {
+  color: var(--color-primary);
+  background-color: var(--color-primary-light);
+}
+
+.location-list-panel__page-button--active {
+  color: var(--color-text-inverse);
+  background-color: var(--color-primary);
+}
+
+.location-list-panel__page-button--active:hover:not(:disabled) {
+  color: var(--color-text-inverse);
+  background-color: var(--color-primary-hover);
+}
+
+.location-list-panel__page-button:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.location-list-panel__page-button--active:disabled {
+  opacity: 1;
+}
+
+@keyframes location-refresh-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+</style>

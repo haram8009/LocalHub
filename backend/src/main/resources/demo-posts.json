@@ -1,0 +1,322 @@
+[
+  {
+    "id": 1,
+    "category": "COURSE",
+    "categoryLabel": "여행 코스",
+    "title": "처음 가는 부산, 바다 따라 하루 코스",
+    "content": "해운대에서 시작해 동백섬 산책로를 걷고 광안리에서 노을을 보는 코스예요. 대중교통으로 이동하기 편했습니다.",
+    "locations": [
+      {
+        "contentId": "demo-1-1",
+        "contentTypeId": "12",
+        "name": "해운대해수욕장",
+        "address": "부산광역시 해운대구 해운대해변로 264",
+        "latitude": 35.1587,
+        "longitude": 129.1583,
+        "visitOrder": 1
+      },
+      {
+        "contentId": "demo-1-2",
+        "contentTypeId": "12",
+        "name": "동백섬",
+        "address": "부산광역시 해운대구 동백로  안내",
+        "latitude": 35.1532,
+        "longitude": 129.1521,
+        "visitOrder": 2
+      },
+      {
+        "contentId": "demo-1-3",
+        "contentTypeId": "12",
+        "name": "광안리해수욕장",
+        "address": "부산광역시 수영구 광안해변로 219",
+        "latitude": 35.1532,
+        "longitude": 129.1187,
+        "visitOrder": 3
+      }
+    ],
+    "createdAt": "2026-10-14T03:14:45.915Z",
+    "viewCount": 128,
+    "authorId": "localhub-demo",
+    "authorName": "LocalHub 여행자",
+    "updatedAt": "2026-10-14T03:14:45.915Z"
+  },
+  {
+    "id": 2,
+    "category": "REVIEW",
+    "categoryLabel": "여행 후기",
+    "title": "경주 대릉원과 황리단길 산책 후기",
+    "content": "오전에 대릉원을 여유롭게 둘러보고 황리단길에서 점심을 먹었어요. 골목마다 볼거리가 많아 천천히 걷기 좋았습니다.",
+    "locations": [
+      {
+        "contentId": "demo-2-1",
+        "contentTypeId": "12",
+        "name": "대릉원",
+        "address": "경상북도 경주시 황남동 31-1",
+        "latitude": 35.8352,
+        "longitude": 129.211,
+        "visitOrder": 1
+      },
+      {
+        "contentId": "demo-2-2",
+        "contentTypeId": "12",
+        "name": "황리단길",
+        "address": "경상북도 경주시 포석로 1080",
+        "latitude": 35.839,
+        "longitude": 129.2111,
+        "visitOrder": 2
+      }
+    ],
+    "createdAt": "2026-10-13T03:14:45.917Z",
+    "viewCount": 96,
+    "authorId": "localhub-demo",
+    "authorName": "LocalHub 여행자",
+    "updatedAt": "2026-10-13T03:14:45.917Z"
+  },
+  {
+    "id": 3,
+    "category": "TIP",
+    "categoryLabel": "여행 팁",
+    "title": "제주 동쪽 여행은 렌터카 예약부터!",
+    "content": "성산일출봉과 섭지코지를 함께 둘러볼 계획이라면 이동 시간을 고려해 렌터카를 미리 예약하는 것을 추천해요. 주차장 위치도 미리 확인해 두세요.",
+    "locations": [
+      {
+        "contentId": "demo-3-1",
+        "contentTypeId": "12",
+        "name": "성산일출봉",
+        "address": "제주특별자치도 서귀포시 성산읍 일출로 284-12",
+        "latitude": 33.458,
+        "longitude": 126.9426,
+        "visitOrder": 1
+      },
+      {
+        "contentId": "demo-3-2",
+        "contentTypeId": "12",
+        "name": "섭지코지",
+        "address": "제주특별자치도 서귀포시 성산읍 섭지코지로 107",
+        "latitude": 33.4239,
+        "longitude": 126.9308,
+        "visitOrder": 2
+      }
+    ],
+    "createdAt": "2026-10-12T03:14:45.917Z",
+    "viewCount": 214,
+    "authorId": "localhub-demo",
+    "authorName": "LocalHub 여행자",
+    "updatedAt": "2026-10-12T03:14:45.917Z"
+  },
+  {
+    "id": 4,
+    "category": "RECOMMENDATION",
+    "categoryLabel": "여행지 추천",
+    "title": "가족과 걷기 좋은 전주 한옥마을",
+    "content": "한옥마을 안쪽 골목은 차가 많지 않아 가족과 천천히 걷기 좋았어요. 경기전과 전동성당을 함께 둘러보는 일정으로 추천합니다.",
+    "locations": [
+      {
+        "contentId": "demo-4-1",
+        "contentTypeId": "12",
+        "name": "전주한옥마을",
+        "address": "전북특별자치도 전주시 완산구 기린대로 99",
+        "latitude": 35.815,
+        "longitude": 127.153,
+        "visitOrder": 1
+      },
+      {
+        "contentId": "demo-4-2",
+        "contentTypeId": "12",
+        "name": "경기전",
+        "address": "전북특별자치도 전주시 완산구 태조로 44",
+        "latitude": 35.813,
+        "longitude": 127.149,
+        "visitOrder": 2
+      }
+    ],
+    "createdAt": "2026-10-11T03:14:45.917Z",
+    "viewCount": 83,
+    "authorId": "localhub-demo",
+    "authorName": "LocalHub 여행자",
+    "updatedAt": "2026-10-11T03:14:45.917Z"
+  },
+  {
+    "id": 5,
+    "category": "COURSE",
+    "categoryLabel": "여행 코스",
+    "title": "서울 도심에서 만나는 궁궐 하루",
+    "content": "경복궁 관람 후 북촌 골목을 걷고 인사동에서 마무리하는 코스입니다. 궁궐 휴궁일은 방문 전에 확인해 주세요.",
+    "locations": [
+      {
+        "contentId": "demo-5-1",
+        "contentTypeId": "12",
+        "name": "경복궁",
+        "address": "서울특별시 종로구 사직로 161",
+        "latitude": 37.5788,
+        "longitude": 126.977,
+        "visitOrder": 1
+      },
+      {
+        "contentId": "demo-5-2",
+        "contentTypeId": "12",
+        "name": "북촌한옥마을",
+        "address": "서울특별시 종로구 계동길 37",
+        "latitude": 37.5826,
+        "longitude": 126.985,
+        "visitOrder": 2
+      },
+      {
+        "contentId": "demo-5-3",
+        "contentTypeId": "12",
+        "name": "인사동",
+        "address": "서울특별시 종로구 인사동길 62",
+        "latitude": 37.574,
+        "longitude": 126.985,
+        "visitOrder": 3
+      }
+    ],
+    "createdAt": "2026-10-10T03:14:45.917Z",
+    "viewCount": 176,
+    "authorId": "localhub-demo",
+    "authorName": "LocalHub 여행자",
+    "updatedAt": "2026-10-10T03:14:45.917Z"
+  },
+  {
+    "id": 6,
+    "category": "REVIEW",
+    "categoryLabel": "여행 후기",
+    "title": "강릉 안목해변에서 보낸 느긋한 오후",
+    "content": "커피거리에서 따뜻한 음료를 마시고 해변을 따라 걸었어요. 붐비는 시간대를 피해 늦은 오후에 가니 한결 여유로웠습니다.",
+    "locations": [
+      {
+        "contentId": "demo-6-1",
+        "contentTypeId": "12",
+        "name": "안목해변",
+        "address": "강원특별자치도 강릉시 창해로14번길 20-1",
+        "latitude": 37.7719,
+        "longitude": 128.9485,
+        "visitOrder": 1
+      }
+    ],
+    "createdAt": "2026-10-09T03:14:45.917Z",
+    "viewCount": 67,
+    "authorId": "localhub-demo",
+    "authorName": "LocalHub 여행자",
+    "updatedAt": "2026-10-09T03:14:45.917Z"
+  },
+  {
+    "id": 7,
+    "category": "TIP",
+    "categoryLabel": "여행 팁",
+    "title": "속초 중앙시장 알차게 둘러보는 방법",
+    "content": "주말 오후에는 사람이 많으니 오전 방문을 추천해요. 먹거리를 포장할 예정이라면 보냉 가방을 챙기면 편리합니다.",
+    "locations": [
+      {
+        "contentId": "demo-7-1",
+        "contentTypeId": "38",
+        "name": "속초관광수산시장",
+        "address": "강원특별자치도 속초시 중앙로147번길 12",
+        "latitude": 38.2044,
+        "longitude": 128.5908,
+        "visitOrder": 1
+      }
+    ],
+    "createdAt": "2026-10-08T03:14:45.917Z",
+    "viewCount": 102,
+    "authorId": "localhub-demo",
+    "authorName": "LocalHub 여행자",
+    "updatedAt": "2026-10-08T03:14:45.917Z"
+  },
+  {
+    "id": 8,
+    "category": "COURSE",
+    "categoryLabel": "여행 코스",
+    "title": "대전에서 과학과 산책을 함께 즐기기",
+    "content": "국립중앙과학관 전시를 본 뒤 한밭수목원에서 산책했어요. 실내와 야외 일정이 함께 있어 날씨에 맞춰 조절하기 좋습니다.",
+    "locations": [
+      {
+        "contentId": "demo-8-1",
+        "contentTypeId": "14",
+        "name": "국립중앙과학관",
+        "address": "대전광역시 유성구 대덕대로 481",
+        "latitude": 36.374,
+        "longitude": 127.376,
+        "visitOrder": 1
+      },
+      {
+        "contentId": "demo-8-2",
+        "contentTypeId": "12",
+        "name": "한밭수목원",
+        "address": "대전광역시 서구 둔산대로 169",
+        "latitude": 36.367,
+        "longitude": 127.388,
+        "visitOrder": 2
+      }
+    ],
+    "createdAt": "2026-10-07T03:14:45.917Z",
+    "viewCount": 51,
+    "authorId": "localhub-demo",
+    "authorName": "LocalHub 여행자",
+    "updatedAt": "2026-10-07T03:14:45.917Z"
+  },
+  {
+    "id": 9,
+    "category": "RECOMMENDATION",
+    "categoryLabel": "여행지 추천",
+    "title": "사진 찍기 좋은 담양 메타세쿼이아길",
+    "content": "나무가 이어지는 길을 천천히 걸으며 계절 풍경을 즐겨보세요. 근처 죽녹원까지 함께 방문하면 하루 일정으로 알차게 다녀올 수 있습니다.",
+    "locations": [
+      {
+        "contentId": "demo-9-1",
+        "contentTypeId": "12",
+        "name": "담양 메타세쿼이아길",
+        "address": "전라남도 담양군 담양읍 메타세쿼이아로 12",
+        "latitude": 35.319,
+        "longitude": 126.987,
+        "visitOrder": 1
+      },
+      {
+        "contentId": "demo-9-2",
+        "contentTypeId": "12",
+        "name": "죽녹원",
+        "address": "전라남도 담양군 담양읍 죽녹원로 119",
+        "latitude": 35.324,
+        "longitude": 126.982,
+        "visitOrder": 2
+      }
+    ],
+    "createdAt": "2026-10-06T03:14:45.917Z",
+    "viewCount": 143,
+    "authorId": "localhub-demo",
+    "authorName": "LocalHub 여행자",
+    "updatedAt": "2026-10-06T03:14:45.917Z"
+  },
+  {
+    "id": 10,
+    "category": "COURSE",
+    "categoryLabel": "여행 코스",
+    "title": "인천 개항장과 차이나타운 반나절 코스",
+    "content": "개항장 거리의 근대 건축물을 둘러보고 차이나타운에서 식사하는 코스예요. 역에서 가까워 대중교통으로 다녀오기 편했습니다.",
+    "locations": [
+      {
+        "contentId": "demo-10-1",
+        "contentTypeId": "14",
+        "name": "인천개항장 근대건축전시관",
+        "address": "인천광역시 중구 신포로23번길 77",
+        "latitude": 37.473,
+        "longitude": 126.617,
+        "visitOrder": 1
+      },
+      {
+        "contentId": "demo-10-2",
+        "contentTypeId": "12",
+        "name": "인천 차이나타운",
+        "address": "인천광역시 중구 차이나타운로26번길 12-17",
+        "latitude": 37.475,
+        "longitude": 126.617,
+        "visitOrder": 2
+      }
+    ],
+    "createdAt": "2026-10-05T03:14:45.917Z",
+    "viewCount": 89,
+    "authorId": "localhub-demo",
+    "authorName": "LocalHub 여행자",
+    "updatedAt": "2026-10-05T03:14:45.917Z"
+  }
+]

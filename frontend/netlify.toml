@@ -1,0 +1,7 @@
+[build.environment]
+  SECRETS_SCAN_OMIT_KEYS = "VITE_TOUR_API_KEY,VITE_KAKAO_MAP_JAVASCRIPT_KEY"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

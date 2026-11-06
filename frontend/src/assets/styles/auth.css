@@ -1,0 +1,146 @@
+/* 로그인·회원가입·마이페이지 등 회원 화면이 함께 쓰는 폼 스타일 */
+.auth-form {
+  display: grid;
+  gap: var(--spacing-4);
+}
+
+.auth-field {
+  display: grid;
+  gap: var(--spacing-2);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.auth-field__required {
+  color: var(--color-error);
+}
+
+.auth-control {
+  min-height: 46px;
+  padding: 0 var(--spacing-3);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-weight: var(--font-weight-regular);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.auth-control:focus {
+  border-color: var(--color-primary);
+  outline: none;
+  box-shadow: 0 0 0 3px rgb(47 125 91 / 12%);
+}
+
+.auth-control:read-only {
+  color: var(--color-text-secondary);
+  background: var(--color-surface-muted);
+}
+
+.auth-control--invalid {
+  border-color: var(--color-error);
+}
+
+.auth-hint {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+}
+
+.auth-error {
+  margin: 0;
+  color: var(--color-error);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+}
+
+.auth-alert {
+  margin: 0;
+  padding: var(--spacing-3);
+  color: var(--color-error);
+  font-size: var(--font-size-sm);
+  background: rgb(220 90 90 / 8%);
+  border: 1px solid rgb(220 90 90 / 30%);
+  border-radius: var(--radius-md);
+}
+
+.auth-alert--success {
+  color: var(--color-primary-active);
+  background: var(--color-primary-light);
+  border-color: rgb(47 125 91 / 30%);
+}
+
+.auth-button {
+  display: inline-flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--spacing-5);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  text-decoration: none;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.auth-button:hover:not(:disabled) {
+  color: var(--color-text-primary);
+  background: var(--color-surface-hover);
+}
+
+.auth-button--primary {
+  color: var(--color-text-inverse);
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.auth-button--primary:hover:not(:disabled) {
+  color: var(--color-text-inverse);
+  background: var(--color-primary-hover);
+}
+
+.auth-button--danger {
+  color: var(--color-error);
+  border-color: rgb(220 90 90 / 35%);
+}
+
+.auth-button--danger-fill {
+  color: var(--color-text-inverse);
+  background: var(--color-error);
+  border-color: var(--color-error);
+}
+
+.auth-button--danger-fill:hover:not(:disabled) {
+  color: var(--color-text-inverse);
+  background: var(--color-error);
+}
+
+.auth-button--block {
+  width: 100%;
+}
+
+.auth-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--spacing-2) var(--spacing-4);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.auth-links a {
+  color: var(--color-text-secondary);
+  text-decoration: none;
+}
+
+.auth-links a:hover {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
+.auth-links strong a {
+  color: var(--color-primary);
+}
