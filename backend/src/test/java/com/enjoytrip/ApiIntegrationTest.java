@@ -13,9 +13,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.assertj.core.api.Assertions.*;
 
-@SpringBootTest(properties={"spring.datasource.url=jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "app.seed-demo=false"})
+@SpringBootTest(properties={"app.seed-demo=false", "app.tour-source=api", "app.tour-key=", "app.kakao-key="})
 @AutoConfigureMockMvc
-class ApiIntegrationTest {
+class ApiIntegrationTest extends MySqlIntegrationTest {
     @Autowired MockMvc mvc;
     @Autowired ObjectMapper mapper;
     @Autowired MemberRepository members;

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.enjoytrip.AttractionMapper">
+<resultMap id="attraction" type="java.util.LinkedHashMap" autoMapping="false"><result property="contentid" column="content_id"/><result property="title" column="title"/><result property="contenttypeid" column="content_type_id"/><result property="areacode" column="area_code"/><result property="sigungucode" column="si_gun_gu_code"/><result property="firstimage" column="first_image1"/><result property="firstimage2" column="first_image2"/><result property="mapx" column="longitude"/><result property="mapy" column="latitude"/><result property="mlevel" column="map_level"/><result property="tel" column="tel"/><result property="addr1" column="addr1"/><result property="addr2" column="addr2"/><result property="homepage" column="homepage"/><result property="overview" column="overview"/><result property="dist" column="distance_meters"/></resultMap>
+<resultMap id="code" type="java.util.LinkedHashMap"><result property="code" column="code" javaType="java.lang.String"/><result property="name" column="name"/></resultMap>
+<select id="codes" resultMap="code"><choose><when test="sido == null">SELECT sido_code AS code,sido_name AS name FROM sidos ORDER BY sido_code</when><otherwise>SELECT gugun_code AS code,gugun_name AS name FROM guguns WHERE sido_code=#{sido} ORDER BY gugun_code</otherwise></choose></select>
+<sql id="distance">(6371000 * acos(least(1.0,greatest(-1.0,sin(radians(#{y}))*sin(radians(latitude))+cos(radians(#{y}))*cos(radians(latitude))*cos(radians(longitude)-radians(#{x}))))))</sql>
+<sql id="filters"><where>
+<if test="area_code != null">AND area_code=#{area_code}</if>
+<if test="si_gun_gu_code != null">AND si_gun_gu_code=#{si_gun_gu_code}</if>
+<if test="content_type_id != null">AND content_type_id=#{content_type_id}</if>
+<if test="content_id != null">AND content_id=#{content_id}</if>
+<if test="keyword != null">AND title LIKE #{keyword} ESCAPE '!'</if>
+<if test="nearby">AND latitude IS NOT NULL AND longitude IS NOT NULL AND <include refid="distance"/> &lt;= #{radius}</if>
+</where></sql>
+<select id="count" resultType="long">SELECT COUNT(*) FROM attractions <include refid="filters"/></select>
+<select id="search" resultMap="attraction">SELECT *, <choose><when test="nearby"><include refid="distance"/></when><otherwise>NULL</otherwise></choose> AS distance_meters FROM attractions <include refid="filters"/>
+ORDER BY <choose><when test="nearby and distanceOrder">distance_meters,no</when><otherwise>title,no</otherwise></choose> LIMIT #{limit} OFFSET #{offset}</select>
+</mapper>

@@ -1,0 +1,1129 @@
+{
+  "info": {
+    "name": "EnjoyTrip Spring + MyBatis",
+    "description": "local 프로필 및 관광 DB가 준비된 개발 서버에서 순서대로 실행합니다. 임시 계정을 생성하고 마지막에 삭제합니다. CSRF와 쿠키를 자동 유지합니다. 기본 포트 8080.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "contentId",
+      "value": "101"
+    }
+  ],
+  "item": [
+    {
+      "name": "01 세션 및 테스트 계정 준비",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+              "const suffix=Date.now().toString(); pm.collectionVariables.set('userId','p'+suffix); pm.collectionVariables.set('email','p'+suffix+'@example.com');",
+              "pm.test('CSRF 계약',()=>{pm.expect(pm.response.json()).to.have.keys('token','headerName');});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/auth/csrf"
+      }
+    },
+    {
+      "name": "02 비로그인 회원 조회",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 401',()=>pm.response.to.have.status(401));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/auth/me"
+      }
+    },
+    {
+      "name": "03 회원가입",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.sendRequest({url:pm.variables.get('baseUrl')+'/api/auth/csrf',method:'GET'},(err,res)=>{",
+              " if(err || res.code!==200) throw new Error('CSRF request failed');",
+              " const csrf=res.json(); pm.request.headers.upsert({key:csrf.headerName,value:csrf.token});",
+              "});"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 201',()=>pm.response.to.have.status(201));",
+              "pm.test('회원 응답에 비밀번호 없음',()=>pm.expect(pm.response.json()).to.have.keys('id','name','email'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/auth/signup",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"password\": \"Test1234!\",\n  \"name\": \"테스트여행자\",\n  \"email\": \"{{email}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "04 중복 가입 차단",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.sendRequest({url:pm.variables.get('baseUrl')+'/api/auth/csrf',method:'GET'},(err,res)=>{",
+              " if(err || res.code!==200) throw new Error('CSRF request failed');",
+              " const csrf=res.json(); pm.request.headers.upsert({key:csrf.headerName,value:csrf.token});",
+              "});"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 409',()=>pm.response.to.have.status(409));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/auth/signup",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"password\": \"Test1234!\",\n  \"name\": \"테스트여행자\",\n  \"email\": \"{{email}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "05 로그인",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.sendRequest({url:pm.variables.get('baseUrl')+'/api/auth/csrf',method:'GET'},(err,res)=>{",
+              " if(err || res.code!==200) throw new Error('CSRF request failed');",
+              " const csrf=res.json(); pm.request.headers.upsert({key:csrf.headerName,value:csrf.token});",
+              "});"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"password\": \"Test1234!\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "06 내 정보",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+              "pm.test('동일 계정',()=>pm.expect(pm.response.json().id).to.eql(pm.collectionVariables.get('userId')));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/auth/me"
+      }
+    },
+    {
+      "name": "07 프로필 수정",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.sendRequest({url:pm.variables.get('baseUrl')+'/api/auth/csrf',method:'GET'},(err,res)=>{",
+              " if(err || res.code!==200) throw new Error('CSRF request failed');",
+              " const csrf=res.json(); pm.request.headers.upsert({key:csrf.headerName,value:csrf.token});",
+              "});"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/auth/profile",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"수정여행자\",\n  \"email\": \"{{email}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "08 아이디 찾기",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.sendRequest({url:pm.variables.get('baseUrl')+'/api/auth/csrf',method:'GET'},(err,res)=>{",
+              " if(err || res.code!==200) throw new Error('CSRF request failed');",
+              " const csrf=res.json(); pm.request.headers.upsert({key:csrf.headerName,value:csrf.token});",
+              "});"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/auth/find-id",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"수정여행자\",\n  \"email\": \"{{email}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "09 시도 조회",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+              "pm.test('관광 응답 계약',()=>pm.expect(pm.response.json().response.body.items.item).to.be.an('array'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/tour/ldongCode2"
+      }
+    },
+    {
+      "name": "10 시군구 조회",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/tour/ldongCode2?lDongRegnCd=1"
+      }
+    },
+    {
+      "name": "유형별 조회: 관광지",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+              "pm.test('유형 필터',()=>pm.response.json().response.body.items.item.forEach(item=>pm.expect(Number(item.contenttypeid)).to.eql(12)));",
+              "const rows=pm.response.json().response.body.items.item;if(rows.length)pm.collectionVariables.set('contentId',String(rows[0].contentid));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/tour/areaBasedList2?lDongRegnCd=1&contentTypeId=12&numOfRows=2"
+      }
+    },
+    {
+      "name": "유형별 조회: 숙박",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+              "pm.test('유형 필터',()=>pm.response.json().response.body.items.item.forEach(item=>pm.expect(Number(item.contenttypeid)).to.eql(32)));",
+              "const rows=pm.response.json().response.body.items.item;if(rows.length)pm.collectionVariables.set('contentId',String(rows[0].contentid));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/tour/areaBasedList2?lDongRegnCd=1&contentTypeId=32&numOfRows=2"
+      }
+    },
+    {
+      "name": "유형별 조회: 음식점",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+              "pm.test('유형 필터',()=>pm.response.json().response.body.items.item.forEach(item=>pm.expect(Number(item.contenttypeid)).to.eql(39)));",
+              "const rows=pm.response.json().response.body.items.item;if(rows.length)pm.collectionVariables.set('contentId',String(rows[0].contentid));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/tour/areaBasedList2?lDongRegnCd=1&contentTypeId=39&numOfRows=2"
+      }
+    },
+    {
+      "name": "유형별 조회: 문화시설",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+              "pm.test('유형 필터',()=>pm.response.json().response.body.items.item.forEach(item=>pm.expect(Number(item.contenttypeid)).to.eql(14)));",
+              "const rows=pm.response.json().response.body.items.item;if(rows.length)pm.collectionVariables.set('contentId',String(rows[0].contentid));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/tour/areaBasedList2?lDongRegnCd=1&contentTypeId=14&numOfRows=2"
+      }
+    },
+    {
+      "name": "유형별 조회: 공연",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+              "pm.test('유형 필터',()=>pm.response.json().response.body.items.item.forEach(item=>pm.expect(Number(item.contenttypeid)).to.eql(15)));",
+              "const rows=pm.response.json().response.body.items.item;if(rows.length)pm.collectionVariables.set('contentId',String(rows[0].contentid));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/tour/areaBasedList2?lDongRegnCd=1&contentTypeId=15&numOfRows=2"
+      }
+    },
+    {
+      "name": "유형별 조회: 여행코스",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+              "pm.test('유형 필터',()=>pm.response.json().response.body.items.item.forEach(item=>pm.expect(Number(item.contenttypeid)).to.eql(25)));",
+              "const rows=pm.response.json().response.body.items.item;if(rows.length)pm.collectionVariables.set('contentId',String(rows[0].contentid));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/tour/areaBasedList2?lDongRegnCd=1&contentTypeId=25&numOfRows=2"
+      }
+    },
+    {
+      "name": "유형별 조회: 쇼핑",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+              "pm.test('유형 필터',()=>pm.response.json().response.body.items.item.forEach(item=>pm.expect(Number(item.contenttypeid)).to.eql(38)));",
+              "const rows=pm.response.json().response.body.items.item;if(rows.length)pm.collectionVariables.set('contentId',String(rows[0].contentid));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/tour/areaBasedList2?lDongRegnCd=1&contentTypeId=38&numOfRows=2"
+      }
+    },
+    {
+      "name": "관광지 상세",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/tour/detailCommon2?contentId={{contentId}}"
+      }
+    },
+    {
+      "name": "잘못된 관광 페이지",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 422',()=>pm.response.to.have.status(422));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/tour/areaBasedList2?pageNo=0"
+      }
+    },
+    {
+      "name": "여행 코스 등록",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.sendRequest({url:pm.variables.get('baseUrl')+'/api/auth/csrf',method:'GET'},(err,res)=>{",
+              " if(err || res.code!==200) throw new Error('CSRF request failed');",
+              " const csrf=res.json(); pm.request.headers.upsert({key:csrf.headerName,value:csrf.token});",
+              "});"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 201',()=>pm.response.to.have.status(201));",
+              "pm.collectionVariables.set('postId',String(pm.response.json().id));",
+              "pm.test('방문 순서 저장',()=>pm.expect(pm.response.json().locations.map(l=>l.visitOrder)).to.eql([1,2]));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/posts",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"category\": \"COURSE\",\n  \"title\": \"Postman 부산 여행\",\n  \"content\": \"부산 바다 여행 코스\",\n  \"locations\": [\n    {\n      \"contentId\": \"101\",\n      \"name\": \"해운대\",\n      \"latitude\": 35.1587,\n      \"longitude\": 129.1583\n    },\n    {\n      \"contentId\": \"102\",\n      \"name\": \"광안리\",\n      \"latitude\": 35.1532,\n      \"longitude\": 129.1187\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "게시글 목록",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+              "pm.test('작성자 목록',()=>pm.expect(pm.response.json().total).to.eql(1));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/posts?authorId={{userId}}"
+      }
+    },
+    {
+      "name": "게시글 상세",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+              "pm.test('조회수 증가',()=>pm.expect(pm.response.json().viewCount).to.eql(1));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/posts/{{postId}}"
+      }
+    },
+    {
+      "name": "게시글 수정",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.sendRequest({url:pm.variables.get('baseUrl')+'/api/auth/csrf',method:'GET'},(err,res)=>{",
+              " if(err || res.code!==200) throw new Error('CSRF request failed');",
+              " const csrf=res.json(); pm.request.headers.upsert({key:csrf.headerName,value:csrf.token});",
+              "});"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/posts/{{postId}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"category\": \"COURSE\",\n  \"title\": \"Postman 서울 여행\",\n  \"content\": \"부산 바다 여행 코스\",\n  \"locations\": [\n    {\n      \"contentId\": \"101\",\n      \"name\": \"해운대\",\n      \"latitude\": 35.1587,\n      \"longitude\": 129.1583\n    },\n    {\n      \"contentId\": \"102\",\n      \"name\": \"광안리\",\n      \"latitude\": 35.1532,\n      \"longitude\": 129.1187\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "수정된 검색 인덱스",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+              "pm.test('수정 반영',()=>pm.expect(pm.response.json().total).to.eql(1));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/posts/search?query=서울&authorId={{userId}}"
+      }
+    },
+    {
+      "name": "추천 API",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/posts/{{postId}}/similar"
+      }
+    },
+    {
+      "name": "주변 API",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/posts/nearby?latitude=35.1587&longitude=129.1583"
+      }
+    },
+    {
+      "name": "게시글 삭제",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.sendRequest({url:pm.variables.get('baseUrl')+'/api/auth/csrf',method:'GET'},(err,res)=>{",
+              " if(err || res.code!==200) throw new Error('CSRF request failed');",
+              " const csrf=res.json(); pm.request.headers.upsert({key:csrf.headerName,value:csrf.token});",
+              "});"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": "{{baseUrl}}/api/posts/{{postId}}"
+      }
+    },
+    {
+      "name": "삭제 후 404",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 404',()=>pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/posts/{{postId}}"
+      }
+    },
+    {
+      "name": "회원 탈퇴 시 함께 삭제할 글",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.sendRequest({url:pm.variables.get('baseUrl')+'/api/auth/csrf',method:'GET'},(err,res)=>{",
+              " if(err || res.code!==200) throw new Error('CSRF request failed');",
+              " const csrf=res.json(); pm.request.headers.upsert({key:csrf.headerName,value:csrf.token});",
+              "});"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 201',()=>pm.response.to.have.status(201));",
+              "pm.collectionVariables.set('postId',String(pm.response.json().id));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/posts",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"category\": \"COURSE\",\n  \"title\": \"Postman 부산 여행\",\n  \"content\": \"부산 바다 여행 코스\",\n  \"locations\": [\n    {\n      \"contentId\": \"101\",\n      \"name\": \"해운대\",\n      \"latitude\": 35.1587,\n      \"longitude\": 129.1583\n    },\n    {\n      \"contentId\": \"102\",\n      \"name\": \"광안리\",\n      \"latitude\": 35.1532,\n      \"longitude\": 129.1187\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "로그아웃",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.sendRequest({url:pm.variables.get('baseUrl')+'/api/auth/csrf',method:'GET'},(err,res)=>{",
+              " if(err || res.code!==200) throw new Error('CSRF request failed');",
+              " const csrf=res.json(); pm.request.headers.upsert({key:csrf.headerName,value:csrf.token});",
+              "});"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": "{{baseUrl}}/api/auth/logout"
+      }
+    },
+    {
+      "name": "로그아웃 후 인증 차단",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 401',()=>pm.response.to.have.status(401));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/auth/me"
+      }
+    },
+    {
+      "name": "비밀번호 찾기 (local 전용)",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.sendRequest({url:pm.variables.get('baseUrl')+'/api/auth/csrf',method:'GET'},(err,res)=>{",
+              " if(err || res.code!==200) throw new Error('CSRF request failed');",
+              " const csrf=res.json(); pm.request.headers.upsert({key:csrf.headerName,value:csrf.token});",
+              "});"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+              "pm.collectionVariables.set('resetCode',pm.response.json().devResetCode);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/auth/reset-target",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"email\": \"{{email}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "비밀번호 재설정",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.sendRequest({url:pm.variables.get('baseUrl')+'/api/auth/csrf',method:'GET'},(err,res)=>{",
+              " if(err || res.code!==200) throw new Error('CSRF request failed');",
+              " const csrf=res.json(); pm.request.headers.upsert({key:csrf.headerName,value:csrf.token});",
+              "});"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/auth/reset-password",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"code\": \"{{resetCode}}\",\n  \"password\": \"Changed1234!\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "새 비밀번호 로그인",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.sendRequest({url:pm.variables.get('baseUrl')+'/api/auth/csrf',method:'GET'},(err,res)=>{",
+              " if(err || res.code!==200) throw new Error('CSRF request failed');",
+              " const csrf=res.json(); pm.request.headers.upsert({key:csrf.headerName,value:csrf.token});",
+              "});"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"password\": \"Changed1234!\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "비밀번호 변경",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.sendRequest({url:pm.variables.get('baseUrl')+'/api/auth/csrf',method:'GET'},(err,res)=>{",
+              " if(err || res.code!==200) throw new Error('CSRF request failed');",
+              " const csrf=res.json(); pm.request.headers.upsert({key:csrf.headerName,value:csrf.token});",
+              "});"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/auth/password",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"currentPassword\": \"Changed1234!\",\n  \"newPassword\": \"Final1234!\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "테스트 회원 탈퇴 및 정리",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.sendRequest({url:pm.variables.get('baseUrl')+'/api/auth/csrf',method:'GET'},(err,res)=>{",
+              " if(err || res.code!==200) throw new Error('CSRF request failed');",
+              " const csrf=res.json(); pm.request.headers.upsert({key:csrf.headerName,value:csrf.token});",
+              "});"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/auth/me",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"password\": \"Final1234!\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "탈퇴 후 게시글도 삭제",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 404',()=>pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/posts/{{postId}}"
+      }
+    },
+    {
+      "name": "탈퇴 후 세션 무효화",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 401',()=>pm.response.to.have.status(401));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/auth/me"
+      }
+    }
+  ]
+}

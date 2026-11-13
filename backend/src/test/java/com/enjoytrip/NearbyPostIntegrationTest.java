@@ -1,8 +1,8 @@
 package com.enjoytrip;
 
 import java.time.Instant;
-import jakarta.persistence.EntityManagerFactory;
-import org.hibernate.SessionFactory;
+
+
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -12,13 +12,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.assertj.core.api.Assertions.*;
 
-@SpringBootTest(properties = {"spring.datasource.url=jdbc:h2:mem:nearby-post-test;DB_CLOSE_DELAY=-1",
-    "app.seed-demo=false", "spring.jpa.properties.hibernate.generate_statistics=true"})
+@SpringBootTest(properties = {"app.seed-demo=false"})
 @AutoConfigureMockMvc
-class NearbyPostIntegrationTest {
+@org.springframework.context.annotation.Import(SqlStatementCounter.class)
+class NearbyPostIntegrationTest extends MySqlIntegrationTest {
     @Autowired PostRepository posts;
     @Autowired MockMvc mvc;
-    @Autowired EntityManagerFactory emf;
+    @Autowired SqlStatementCounter statistics;
 
     @BeforeEach void clear() { posts.deleteAll(); }
 
@@ -98,11 +98,9 @@ class NearbyPostIntegrationTest {
     @Test void readsProjectionsWithoutLoadingPostEntitiesOrTheirLocationCollections() throws Exception {
         for (int i = 0; i < 20; i++) post("가까운 글 " + i, location("close", 37.5, 127.0));
         for (int i = 0; i < 20; i++) post("먼 글 " + i, location("far", 35.16, 129.16));
-        var statistics = emf.unwrap(SessionFactory.class).getStatistics(); statistics.clear();
+        statistics.clear();
         mvc.perform(get("/api/posts/nearby").param("latitude", "37.5").param("longitude", "127"))
             .andExpect(status().isOk()).andExpect(jsonPath("items.length()").value(3));
-        assertThat(statistics.getPrepareStatementCount()).isEqualTo(2);
-        assertThat(statistics.getEntityLoadCount()).isZero();
-        assertThat(statistics.getCollectionFetchCount()).isZero();
+        assertThat(statistics.count()).isEqualTo(2);
     }
 }

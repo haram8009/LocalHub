@@ -1,6 +1,6 @@
 package com.enjoytrip;
 
-import jakarta.persistence.EntityManager;
+
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -14,15 +14,15 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.assertj.core.api.Assertions.*;
 
-@SpringBootTest(properties = {"spring.datasource.url=jdbc:h2:mem:search-test;DB_CLOSE_DELAY=-1", "app.seed-demo=false"})
+@SpringBootTest(properties = {"app.seed-demo=false"})
 @AutoConfigureMockMvc
-class PostSearchIntegrationTest {
+class PostSearchIntegrationTest extends MySqlIntegrationTest {
     @Autowired PostRepository posts;
     @Autowired PostSearchIndexer indexer;
     @Autowired PostSearchService search;
     @Autowired SearchIndexInitializer initializer;
     @Autowired PlatformTransactionManager manager;
-    @Autowired EntityManager em;
+
     @Autowired PostSearchIndexRepository index;
     @Autowired MockMvc mvc;
     TransactionTemplate tx;
@@ -80,12 +80,12 @@ class PostSearchIntegrationTest {
     @Test void editDeleteAndRollbackKeepTheIndexConsistent() throws Exception {
         var original = add("부산여행", "바다", "COURSE", "one");
         assertThatThrownBy(() -> tx.execute(status -> {
-            var p = posts.findLockedById(original.id).orElseThrow(); p.title = "서울여행"; indexer.replace(p);
+            var p = posts.findLockedById(original.id).orElseThrow(); p.title = "서울여행"; posts.saveAndFlush(p); indexer.replace(p);
             throw new IllegalStateException("force rollback");
         })).isInstanceOf(IllegalStateException.class);
         mvc.perform(get("/api/posts/search").param("query", "부산")).andExpect(jsonPath("total").value(1));
         mvc.perform(get("/api/posts/search").param("query", "서울")).andExpect(jsonPath("total").value(0));
-        tx.executeWithoutResult(status -> { var p = posts.findLockedById(original.id).orElseThrow(); p.title = "서울여행"; indexer.replace(p); });
+        tx.executeWithoutResult(status -> { var p = posts.findLockedById(original.id).orElseThrow(); p.title = "서울여행"; posts.saveAndFlush(p); indexer.replace(p); });
         mvc.perform(get("/api/posts/search").param("query", "부산")).andExpect(jsonPath("total").value(0));
         mvc.perform(get("/api/posts/search").param("query", "서울")).andExpect(jsonPath("total").value(1));
         posts.deleteById(original.id);
@@ -99,7 +99,7 @@ class PostSearchIntegrationTest {
         mvc.perform(get("/api/posts/search").param("query", "부산").param("page", "0")).andExpect(status().isBadRequest());
         mvc.perform(get("/api/posts/search").param("query", "a".repeat(101))).andExpect(status().isBadRequest());
         mvc.perform(get("/api/posts/search").param("query", "a b c d e f g h i j k")).andExpect(status().isBadRequest());
-        tx.executeWithoutResult(status -> em.remove(em.find(SearchIndexState.class, "posts")));
+        tx.executeWithoutResult(status -> index.deleteState());
         initializer.run();
         mvc.perform(get("/api/posts/search").param("query", "부산")).andExpect(jsonPath("total").value(1));
         initializer.run();
@@ -111,18 +111,30 @@ class PostSearchIntegrationTest {
         var reader = new TransactionTemplate(manager);
         reader.setReadOnly(true);
         reader.setIsolationLevel(org.springframework.transaction.TransactionDefinition.ISOLATION_SERIALIZABLE);
-        reader.executeWithoutResult(status -> {
-            assertThat(index.findContaining(List.of("부산"))).hasSize(1);
-            var pool = java.util.concurrent.Executors.newSingleThreadExecutor();
-            try {
-                pool.submit(() -> tx.executeWithoutResult(writer -> {
-                    var p = posts.findLockedById(original.id).orElseThrow(); p.title = "서울여행"; indexer.replace(p);
-                })).get(5, java.util.concurrent.TimeUnit.SECONDS);
-            } catch (Exception e) { throw new AssertionError(e); }
-            finally { pool.shutdownNow(); }
-            assertThat(posts.findWithLocationsByIds(List.of(original.id)).get(0).title).isEqualTo("부산여행");
-            assertThat(index.findContaining(List.of("서울"))).isEmpty();
-        });
+        var pool = java.util.concurrent.Executors.newSingleThreadExecutor();
+        try {
+            var writer = reader.execute(status -> {
+                // InnoDB SERIALIZABLE uses shared locks: the writer commits after the reader.
+                assertThat(posts.findWithLocationsByIds(List.of(original.id)).get(0).title).isEqualTo("부산여행");
+                assertThat(index.findContaining(List.of("부산"))).hasSize(1);
+                var started = new java.util.concurrent.CountDownLatch(1);
+                var pending = pool.submit(() -> tx.executeWithoutResult(write -> {
+                    started.countDown();
+                    var p = posts.findLockedById(original.id).orElseThrow();
+                    p.title = "서울여행"; posts.saveAndFlush(p); indexer.replace(p);
+                }));
+                try {
+                    assertThat(started.await(5, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+                    assertThatThrownBy(() -> pending.get(200, java.util.concurrent.TimeUnit.MILLISECONDS))
+                        .isInstanceOf(java.util.concurrent.TimeoutException.class);
+                } catch (InterruptedException e) { Thread.currentThread().interrupt(); throw new AssertionError(e); }
+                assertThat(posts.findWithLocationsByIds(List.of(original.id)).get(0).title).isEqualTo("부산여행");
+                assertThat(index.findContaining(List.of("서울"))).isEmpty();
+                return pending;
+            });
+            writer.get(5, java.util.concurrent.TimeUnit.SECONDS);
+        } catch (Exception e) { throw new AssertionError(e); }
+        finally { pool.shutdownNow(); }
         assertThat(search.search(Map.of("query", "서울")).get("total")).isEqualTo(1L);
     }
 }

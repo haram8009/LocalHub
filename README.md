@@ -12,101 +12,53 @@
 - 회원가입, 로그인·로그아웃, 회원정보 수정 및 탈퇴
 - 아이디 찾기와 로컬 개발용 비밀번호 재설정
 
-## 실행 화면
+## 테스트 결과
 
-2026년 11월 6일 현재 소스를 실행해 새로 캡처한 화면입니다. Spring Boot를 `local,mysql` 프로필로 실행하고 실제 MySQL 데이터와 Kakao 지도를 사용했습니다. 로그인 전용 화면은 임시 계정으로 실제 로그인해 촬영했으며, 해당 계정과 게시글은 촬영 후 삭제했습니다.
+2026년 11월 13일 기준 Spring + MyBatis 백엔드 검증 결과입니다. JDK 21·Gradle 8.14.3으로 자동 테스트와 JAR 빌드를 수행했습니다.
 
-Chrome의 1440 × 1000 뷰포트에서 촬영했습니다. 위치 기반 화면의 테스트 위치는 서울 역삼동 부근(37.5013, 127.0396)이며, 지도는 서울 지역과 관광지 필터를 사용했습니다.
+### 백엔드 자동 테스트
 
-### 메인페이지
+DB를 사용하는 통합 테스트를 **MySQL 8.0.46**에서 실행했으며, 단위 테스트를 포함한 전체 테스트 **45개가 모두 통과**했습니다.
 
-![LocalHub 메인페이지](docs/screenshots/home.png)
+| 검증 항목 | 통과 |
+| --- | ---: |
+| 회원·인증·게시글 API | 9 |
+| 관광지 조회·입력 검증·필수 관광 유형 7종 | 10 |
+| 코스 추천 API·쿼리 수 | 4 |
+| 코스 유사도 계산 | 3 |
+| 비밀번호 해시 마이그레이션 | 3 |
+| 주변 게시글 API·쿼리 수 | 5 |
+| 검색·수정·삭제·롤백·동시 읽기 일관성 | 6 |
+| 검색 알고리즘 | 2 |
+| 생성·수정·탈퇴의 강제 실패 롤백 | 3 |
+| **합계** | **45 / 45** |
 
-### 여행지 지도
+`bootJar` 빌드도 성공했습니다. 게시글·장소·검색 인덱스의 원자적 저장과 롤백, 탈퇴 실패 시 데이터 및 세션 보존을 확인했습니다.
 
-![여행지 지도와 검색 필터](docs/screenshots/map.png)
+### MySQL 및 Postman API 검증
 
-### 게시판 목록
+별도의 MySQL 8 검증 DB에 관광 유형 7종의 테스트 데이터를 적재하고, `local,mysql` 프로필로 실행한 서버에 Postman 컬렉션을 Newman CLI로 실행했습니다.
 
-![여행 게시판 목록](docs/screenshots/posts.png)
+| 검증 항목 | 실행 | 실패 |
+| --- | ---: | ---: |
+| HTTP 요청 (컬렉션 38건 + CSRF 15건) | 53 | 0 |
+| 응답 상태·내용 검증 | 53 | 0 |
 
-<details>
-<summary>지도 필터 및 여행지 상세 화면</summary>
+회원가입·중복 가입 차단·로그인·프로필 수정, 관광지 유형별 조회, 여행 코스 CRUD, 검색·추천, 비밀번호 재설정·변경, 탈퇴와 연관 데이터 삭제를 확인했습니다. 검증 후 임시 계정·서버·DB를 정리했습니다.
 
-#### 지도 분류 필터 선택
+외부 TourAPI·Kakao 호출과 실제 이메일 발송은 이번 검증에 포함하지 않았습니다.
 
-![지도 분류 필터 선택](docs/screenshots/map-filter-category.png)
-
-#### 지도 여행지 상세
-
-![지도에서 선택한 여행지 상세 정보](docs/screenshots/map-location-detail.png)
-
-</details>
-
-<details>
-<summary>게시글 상세·작성·수정 및 마이페이지 화면</summary>
-
-#### 게시글 상세
-
-![게시글 상세 화면](docs/screenshots/post-detail.png)
-
-#### 게시글 작성
-
-![게시글 작성 화면](docs/screenshots/post-create.png)
-
-#### 여행지를 첨부한 게시글 작성
-
-![여행지를 첨부한 게시글 작성 화면](docs/screenshots/post-create-with-place.png)
-
-#### 게시글 수정
-
-![게시글 수정 화면](docs/screenshots/post-edit.png)
-
-#### 마이페이지 및 내 게시글 관리
-
-![마이페이지 및 내 게시글 관리 화면](docs/screenshots/mypage.png)
-
-</details>
-
-<details>
-<summary>회원가입·로그인 및 계정 찾기 화면</summary>
-
-#### 회원가입
-
-![회원가입 화면](docs/screenshots/signup.png)
-
-#### 로그인
-
-![로그인 화면](docs/screenshots/login.png)
-
-#### 아이디 찾기
-
-![아이디 찾기 화면](docs/screenshots/find-id.png)
-
-#### 비밀번호 찾기
-
-![비밀번호 찾기 화면](docs/screenshots/find-password.png)
-
-#### 비밀번호 재설정
-
-![비밀번호 재설정 화면](docs/screenshots/reset-password.png)
-
-</details>
-
-<details>
-<summary>없는 페이지 안내 화면</summary>
-
-![없는 페이지 안내 화면](docs/screenshots/not-found.png)
-
-</details>
+- [상세 검증 결과 및 재실행 방법](docs/SPRING_VERIFICATION.md)
+- [Postman 컬렉션](docs/postman/EnjoyTrip-Spring.postman_collection.json)
+- [요청별 검증 결과 JSON](docs/postman/verification-summary.json)
 
 ## 기술 스택
 
 | 구분 | 기술 |
 | --- | --- |
 | 프론트엔드 | Vue 3, Vue Router, Pinia, Vite |
-| 백엔드 | Java 17, Spring Boot 3.5, Spring Data JPA, Spring JDBC, Spring Security |
-| 데이터베이스 | MySQL 8, H2 |
+| 백엔드 | Java 17, Spring Boot 3.5, MyBatis 3, MyBatis Spring Boot Starter, Spring Security |
+| 데이터베이스 | MySQL 8 (서비스·통합 테스트), H2 (선택적 로컬 실행) |
 | 외부 서비스 | Kakao Maps, Kakao Local, Kakao Mobility, 한국관광공사 TourAPI |
 | 테스트 | JUnit 5, Spring Boot Test, Vitest, Vue Test Utils |
 | 빌드 | Gradle Wrapper, npm |
@@ -234,14 +186,14 @@ MySQL 대신 H2와 외부 TourAPI를 사용하려면 백엔드 프로필을 `loc
 
 ## 테스트
 
-백엔드 테스트는 메모리 H2를 사용합니다. 실행 전에 `local` 프로필을 명시해 개발용 MySQL 설정과 분리합니다.
+백엔드 통합 테스트는 실제 MySQL을 사용합니다. MySQL 서버를 실행하고 `backend/.env`의 접속 정보를 준비한 뒤 실행하세요. 테스트 계정에는 테스트 DB 생성·삭제 권한이 필요합니다. 테스트 실행마다 서비스 DB인 `ssafy_trip`과 별도로 무작위 이름의 `enjoytrip_test_...` DB를 생성하고, 테스트 프로세스 종료 시 삭제합니다.
 
 ```powershell
 cd backend
-$env:SPRING_PROFILES_ACTIVE = 'local'
 .\gradlew.bat test
-Remove-Item Env:SPRING_PROFILES_ACTIVE
 ```
+
+별도의 테스트 접속 정보를 사용할 경우 `TEST_DB_HOST`, `TEST_DB_PORT`, `TEST_DB_USERNAME`, `TEST_DB_PASSWORD` 환경변수를 지정합니다. 생략하면 `backend/.env`의 MySQL 호스트·포트·계정 정보를 사용하지만, 서비스 DB 이름은 사용하지 않습니다. 테스트 실행이 강제로 종료되어 정리되지 않은 DB는 `enjoytrip_test_` 접두사로 구분할 수 있습니다.
 
 프론트엔드 테스트:
 
@@ -279,6 +231,15 @@ java -jar build/libs/enjoytrip-backend-0.0.1-SNAPSHOT.jar
 - 비밀번호 재설정은 `local` 프로필에서 개발용 인증 코드를 반환합니다. 이메일 발송은 구현되어 있지 않습니다.
 - DB 모드는 제공된 관광 유형과 지역 코드를 사용하며, 외부 TourAPI의 세부 분류는 지원하지 않습니다.
 - `SEED_DEMO=false`로 샘플 게시글 생성을 끌 수 있습니다. 샘플 작성자 계정으로는 로그인할 수 없습니다.
+
+## Spring 관통 프로젝트
+
+프론트와 기존 REST API 계약을 유지하면서 DB 접근을 MyBatis Mapper/XML로 전환했습니다. 회원·게시글 업무 로직과 트랜잭션은 서비스 계층에서 처리합니다. 통합 테스트도 별도의 MySQL 테스트 DB에서 실행합니다.
+
+- [요구사항 대응표](docs/SPRING_REQUIREMENTS.md)
+- [클래스 다이어그램과 트랜잭션 설계](docs/SPRING_ARCHITECTURE.md)
+- [테스트 및 Postman 실행 결과](docs/SPRING_VERIFICATION.md)
+- [Postman 컬렉션](docs/postman/EnjoyTrip-Spring.postman_collection.json)
 
 ## 관련 문서
 

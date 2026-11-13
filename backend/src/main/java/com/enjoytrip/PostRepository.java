@@ -1,75 +1,89 @@
 package com.enjoytrip;
-
 import java.util.*;
 import java.time.Instant;
-import jakarta.persistence.LockModeType;
-import org.springframework.data.jpa.repository.*;
-import org.springframework.data.repository.query.Param;
-
-public interface PostRepository extends JpaRepository<TravelPost,Long>, JpaSpecificationExecutor<TravelPost> {
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("select p from TravelPost p where p.id = :id")
-    Optional<TravelPost> findLockedById(@Param("id") Long id);
-    void deleteByAuthorId(String authorId);
-
-    interface CoursePoint {
-        Long getPostId();
-        String getContentId();
-        Integer getVisitOrder();
-    }
-    interface CourseSummary {
-        Long getId();
-        String getTitle();
-        String getContent();
-        String getCategory();
-        String getAuthorId();
-        String getAuthorName();
-        long getViewCount();
-        Instant getCreatedAt();
-        Instant getUpdatedAt();
-        int getLocationCount();
-    }
-
-    @Query("select distinct p.id from TravelPost p join p.locations l where p.id <> :baseId and l.contentId in :placeIds")
-    List<Long> findCourseCandidateIds(@Param("baseId") long baseId, @Param("placeIds") Collection<String> placeIds);
-
-    @Query("select p.id as postId, l.contentId as contentId, l.visitOrder as visitOrder from TravelPost p join p.locations l where p.id in :ids order by p.id, l.visitOrder")
-    List<CoursePoint> findCoursePoints(@Param("ids") Collection<Long> ids);
-
-    @Query("select p.id as id, p.title as title, p.content as content, p.category as category, p.authorId as authorId, p.authorName as authorName, p.viewCount as viewCount, p.createdAt as createdAt, p.updatedAt as updatedAt, size(p.locations) as locationCount from TravelPost p where p.id in :ids")
-    List<CourseSummary> findCourseSummaries(@Param("ids") Collection<Long> ids);
-
-    interface CourseTimestamp { Long getId(); Instant getCreatedAt(); }
-    @Query("select p.id as id, p.createdAt as createdAt from TravelPost p where p.id in :ids")
-    List<CourseTimestamp> findCourseTimestamps(@Param("ids") Collection<Long> ids);
-
-    interface SearchMetadata { Long getId(); Instant getCreatedAt(); }
-    @Query("select p.id as id, p.createdAt as createdAt from TravelPost p where p.id in :ids and (:category = '' or p.category = :category) and (:author = '' or p.authorId = :author)")
-    List<SearchMetadata> findSearchMetadata(@Param("ids") Collection<Long> ids, @Param("category") String category, @Param("author") String author);
-
-    interface LocationSnapshot { Long getPostId(); PostLocation getLocation(); }
-    @Query("select p.id as postId, l as location from TravelPost p join p.locations l where p.id in :ids")
-    List<LocationSnapshot> findLocationSnapshots(@Param("ids") Collection<Long> ids);
-
-    interface NearbyPoint {
-        Long getPostId();
-        Instant getCreatedAt();
-        String getContentId();
-        String getContentTypeId();
-        String getName();
-        String getAddress();
-        String getCategory();
-        String getRegion();
-        Double getLatitude();
-        Double getLongitude();
-        String getThumbnailImageUrl();
-    }
-    @Query("select p.id as postId, p.createdAt as createdAt, l.contentId as contentId, l.contentTypeId as contentTypeId, l.name as name, l.address as address, l.category as category, l.region as region, l.latitude as latitude, l.longitude as longitude, l.thumbnailImageUrl as thumbnailImageUrl from TravelPost p join p.locations l where l.latitude between :minLatitude and :maxLatitude and l.longitude between :minLongitude and :maxLongitude order by p.id, l.visitOrder")
-    List<NearbyPoint> findNearbyPoints(@Param("minLatitude") double minLatitude,
-                                      @Param("maxLatitude") double maxLatitude,
-                                      @Param("minLongitude") double minLongitude,
-                                      @Param("maxLongitude") double maxLongitude);
-
-    @Query("select distinct p from TravelPost p left join fetch p.locations where p.id in :ids")
-    List<TravelPost> findWithLocationsByIds(@Param("ids") Collection<Long> ids);
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
+@Repository
+@Transactional(readOnly=true)
+public class PostRepository {
+ private final PostMapper mapper;
+ public PostRepository(PostMapper mapper) { this.mapper=mapper; }
+ private List<TravelPost> hydrate(List<TravelPost> posts) {
+  if(posts.isEmpty()) return posts;
+  var byId=new HashMap<Long,TravelPost>(); posts.forEach(p->byId.put(p.id,p));
+  for(var row:mapper.findLocationSnapshots(byId.keySet())) byId.get(row.postId).locations.add(row.location);
+  return posts;
+ }
+ public Optional<TravelPost> findById(long id) { var p=mapper.findById(id); return p==null?Optional.empty():Optional.of(hydrate(List.of(p)).get(0)); }
+ public Optional<TravelPost> findLockedById(long id) { var p=mapper.findLockedById(id); return p==null?Optional.empty():Optional.of(hydrate(List.of(p)).get(0)); }
+ public boolean existsById(long id) { return mapper.existsById(id); }
+ public long count() { return mapper.count(); }
+ @Transactional public void incrementViews(long id) { mapper.incrementViews(id); }
+ @Transactional public TravelPost saveAndFlush(TravelPost p) {
+  if(p.id==null) mapper.insert(p); else mapper.update(p);
+  mapper.deleteLocations(p.id);
+  for(int i=0;i<p.locations.size();i++) mapper.insertLocation(p.id,i,p.locations.get(i));
+  return p;
+ }
+ @Transactional public void saveAllAndFlush(List<TravelPost> posts) { posts.forEach(this::saveAndFlush); }
+ @Transactional public void deleteById(long id) { mapper.deleteLocations(id); mapper.deleteById(id); }
+ @Transactional public void delete(TravelPost p) { deleteById(p.id); }
+ @Transactional public void deleteAll() {
+  // Explicit child deletion also supports the legacy schema without ON DELETE CASCADE.
+  for(var p:mapper.list(Map.of())) deleteById(p.id);
+ }
+ @Transactional public void deleteByAuthorId(String author) { mapper.findIdsByAuthor(author).forEach(this::deleteById); }
+ public List<TravelPost> list(Map<String,Object> params) { return hydrate(mapper.list(params)); }
+ public long countFiltered(Map<String,Object> params) { return mapper.countFiltered(params); }
+ public List<TravelPost> scan(long offset,int limit) { return hydrate(mapper.scan(offset,limit)); }
+ public List<TravelPost> findWithLocationsByIds(Collection<Long> ids) { return ids.isEmpty()?List.of():hydrate(mapper.findWithLocationsByIds(ids)); }
+ public List<LocationSnapshot> findLocationSnapshots(Collection<Long> ids) { return ids.isEmpty()?List.of():mapper.findLocationSnapshots(ids); }
+ public List<Long> findCourseCandidateIds(long baseId,Collection<String> placeIds) { return placeIds.isEmpty()?List.of():mapper.findCourseCandidateIds(baseId,placeIds); }
+ public List<CoursePoint> findCoursePoints(Collection<Long> ids) { return ids.isEmpty()?List.of():mapper.findCoursePoints(ids); }
+ public List<CourseSummary> findCourseSummaries(Collection<Long> ids) { return ids.isEmpty()?List.of():mapper.findCourseSummaries(ids); }
+ public List<CourseTimestamp> findCourseTimestamps(Collection<Long> ids) { return ids.isEmpty()?List.of():mapper.findCourseTimestamps(ids); }
+ public List<SearchMetadata> findSearchMetadata(Collection<Long> ids,String category,String author) { return ids.isEmpty()?List.of():mapper.findSearchMetadata(ids,category,author); }
+ public List<NearbyPoint> findNearbyPoints(double a,double b,double c,double d) { return mapper.findNearbyPoints(a,b,c,d); }
+ public static class CoursePoint {
+public Long postId; public Long getPostId() { return postId; }
+public String contentId; public String getContentId() { return contentId; }
+public Integer visitOrder; public Integer getVisitOrder() { return visitOrder; }
+}
+public static class CourseSummary {
+public Long id; public Long getId() { return id; }
+public String title; public String getTitle() { return title; }
+public String content; public String getContent() { return content; }
+public String category; public String getCategory() { return category; }
+public String authorId; public String getAuthorId() { return authorId; }
+public String authorName; public String getAuthorName() { return authorName; }
+public long viewCount; public long getViewCount() { return viewCount; }
+public Instant createdAt; public Instant getCreatedAt() { return createdAt; }
+public Instant updatedAt; public Instant getUpdatedAt() { return updatedAt; }
+public int locationCount; public int getLocationCount() { return locationCount; }
+}
+public static class CourseTimestamp {
+public Long id; public Long getId() { return id; }
+public Instant createdAt; public Instant getCreatedAt() { return createdAt; }
+}
+public static class SearchMetadata {
+public Long id; public Long getId() { return id; }
+public Instant createdAt; public Instant getCreatedAt() { return createdAt; }
+}
+public static class LocationSnapshot {
+public Long postId; public Long getPostId() { return postId; }
+public PostLocation location; public PostLocation getLocation() { return location; }
+}
+public static class NearbyPoint {
+public Long postId; public Long getPostId() { return postId; }
+public Instant createdAt; public Instant getCreatedAt() { return createdAt; }
+public String contentId; public String getContentId() { return contentId; }
+public String contentTypeId; public String getContentTypeId() { return contentTypeId; }
+public String name; public String getName() { return name; }
+public String address; public String getAddress() { return address; }
+public String category; public String getCategory() { return category; }
+public String region; public String getRegion() { return region; }
+public Double latitude; public Double getLatitude() { return latitude; }
+public Double longitude; public Double getLongitude() { return longitude; }
+public String thumbnailImageUrl; public String getThumbnailImageUrl() { return thumbnailImageUrl; }
+}
 }

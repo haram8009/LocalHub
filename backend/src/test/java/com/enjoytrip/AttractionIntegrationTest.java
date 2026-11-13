@@ -9,9 +9,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest(properties={"spring.datasource.url=jdbc:h2:mem:attractions;DB_CLOSE_DELAY=-1", "app.seed-demo=false", "app.tour-source=database"})
+@SpringBootTest(properties={"app.seed-demo=false", "app.tour-source=database"})
 @AutoConfigureMockMvc
-class AttractionIntegrationTest {
+class AttractionIntegrationTest extends MySqlIntegrationTest {
     @Autowired MockMvc mvc;
     @Autowired JdbcTemplate jdbc;
     @BeforeEach void setup() {
@@ -49,5 +49,16 @@ class AttractionIntegrationTest {
         mvc.perform(get("/api/tour/areaBasedList2").param("pageNo","0")).andExpect(status().isUnprocessableEntity());
         mvc.perform(get("/api/tour/areaBasedList2").param("lDongSignguCd","1")).andExpect(status().isUnprocessableEntity());
         mvc.perform(get("/api/tour/locationBasedList2").param("mapX","NaN").param("mapY","37").param("radius","1000")).andExpect(status().isUnprocessableEntity());
+    }
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(ints={12,32,39,14,15,25,38})
+    void supportsEveryRequiredContentTypeWithoutLeakingDatabaseColumns(int type) throws Exception {
+        jdbc.update("insert into attractions(no,content_id,title,content_type_id,area_code,si_gun_gu_code) values(10,110,'유형 테스트',?,6,1)",type);
+        mvc.perform(get("/api/tour/areaBasedList2").param("lDongRegnCd","6").param("contentTypeId",String.valueOf(type)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.response.body.items.item").isNotEmpty())
+            .andExpect(jsonPath("$.response.body.items.item[0].contenttypeid").value(type))
+            .andExpect(jsonPath("$.response.body.items.item[0].no").doesNotExist())
+            .andExpect(jsonPath("$.response.body.items.item[0].contentId").doesNotExist());
     }
 }

@@ -46,5 +46,6 @@ build/
 .gradle/
 data/
 .tools/
+.codex-tmp/
 *.mv.db
 *.trace.db

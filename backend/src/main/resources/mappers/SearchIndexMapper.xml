@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.enjoytrip.SearchIndexMapper">
+<select id="findContaining" resultType="com.enjoytrip.PostSearchIndexRepository$Posting">SELECT term,post_id,title_hit,body_hit FROM post_search_postings WHERE <foreach collection="patterns" item="pattern" separator=" OR ">term LIKE #{pattern} ESCAPE '!'</foreach></select>
+<insert id="add">INSERT INTO post_search_postings(term_hash,post_id,term,title_hit,body_hit) VALUES(#{termHash},#{post.id},#{term},#{titleHit},#{bodyHit})</insert>
+<delete id="remove">DELETE FROM post_search_postings WHERE post_id=#{id}</delete>
+<delete id="removeByAuthor">DELETE FROM post_search_postings WHERE post_id IN (SELECT id FROM travel_posts WHERE author_id=#{id})</delete>
+<delete id="clear">DELETE FROM post_search_postings</delete>
+<select id="version" resultType="string">SELECT version FROM search_index_state WHERE name='posts'</select>
+<delete id="deleteState">DELETE FROM search_index_state WHERE name='posts'</delete>
+<insert id="insertState">INSERT INTO search_index_state(name,version) VALUES('posts',#{version})</insert>
+</mapper>

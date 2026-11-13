@@ -1,6 +1,6 @@
 package com.enjoytrip;
 
-import jakarta.persistence.EntityManager;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.*;
 import java.util.*;
@@ -13,11 +13,11 @@ public class PostSearchService {
     final PostingSetOperations operations;
     final PostRepository posts;
     final PostQueryService latest;
-    final EntityManager em;
+
     PostSearchService(PostSearchIndexRepository index, SearchTextNormalizer normalizer, PostingSetOperations operations,
-                      PostRepository posts, PostQueryService latest, EntityManager em) {
+                      PostRepository posts, PostQueryService latest) {
         this.index = index; this.normalizer = normalizer; this.operations = operations;
-        this.posts = posts; this.latest = latest; this.em = em;
+        this.posts = posts; this.latest = latest;
     }
     @Transactional(readOnly = true, isolation = Isolation.SERIALIZABLE)
     public Map<String, Object> search(Map<String, String> params) {
@@ -31,8 +31,8 @@ public class PostSearchService {
             var fallback = new HashMap<>(params); fallback.remove("query");
             return latest.list(fallback);
         }
-        var state = em.find(SearchIndexState.class, "posts");
-        if (state == null || !SearchIndexState.VERSION.equals(state.version))
+        var version = index.version();
+        if (!SearchIndexState.VERSION.equals(version))
             throw new ApiException(503, "검색 인덱스를 준비 중입니다. 잠시 후 다시 시도해 주세요.");
         Map<String, Map<Long, Integer>> hits = new LinkedHashMap<>();
         queries.forEach(query -> hits.put(query, new HashMap<>()));

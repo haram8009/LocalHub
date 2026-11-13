@@ -2,8 +2,8 @@ package com.enjoytrip;
 
 import java.time.Instant;
 import java.util.*;
-import jakarta.persistence.EntityManagerFactory;
-import org.hibernate.SessionFactory;
+
+
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -13,12 +13,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.assertj.core.api.Assertions.*;
 
-@SpringBootTest(properties = {"spring.datasource.url=jdbc:h2:mem:recommend-test;DB_CLOSE_DELAY=-1", "app.seed-demo=false", "spring.jpa.properties.hibernate.generate_statistics=true"})
+@SpringBootTest(properties = {"app.seed-demo=false"})
 @AutoConfigureMockMvc
-class CourseRecommendationIntegrationTest {
+@org.springframework.context.annotation.Import(SqlStatementCounter.class)
+class CourseRecommendationIntegrationTest extends MySqlIntegrationTest {
     @Autowired PostRepository posts;
     @Autowired MockMvc mvc;
-    @Autowired EntityManagerFactory emf;
+    @Autowired SqlStatementCounter statistics;
     @BeforeEach void clear() { posts.deleteAll(); }
     TravelPost post(String title, String... stops) {
         var p = new TravelPost(); p.category = "COURSE"; p.title = title; p.content = "내용";
@@ -65,9 +66,9 @@ class CourseRecommendationIntegrationTest {
     @Test void batchQueriesAvoidPerCandidateLocationLoads() throws Exception {
         var base = post("기준", "A", "B");
         for (int i = 0; i < 20; i++) post("후보" + i, "A", "B", "C" + i);
-        var statistics = emf.unwrap(SessionFactory.class).getStatistics(); statistics.clear();
+        statistics.clear();
         mvc.perform(get("/api/posts/" + base.id + "/similar"))
             .andExpect(status().isOk()).andExpect(jsonPath("items.length()").value(3));
-        assertThat(statistics.getPrepareStatementCount()).isLessThanOrEqualTo(6);
+        assertThat(statistics.count()).isLessThanOrEqualTo(6);
     }
 }

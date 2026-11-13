@@ -1,0 +1,706 @@
+{
+  "date": "2026-11-13",
+  "database": "MySQL 8 (isolated fixture database)",
+  "runner": "Newman",
+  "stats": {
+    "iterations": {
+      "total": 1,
+      "pending": 0,
+      "failed": 0
+    },
+    "items": {
+      "total": 38,
+      "pending": 0,
+      "failed": 0
+    },
+    "scripts": {
+      "total": 53,
+      "pending": 0,
+      "failed": 0
+    },
+    "prerequests": {
+      "total": 38,
+      "pending": 0,
+      "failed": 0
+    },
+    "requests": {
+      "total": 53,
+      "pending": 0,
+      "failed": 0
+    },
+    "tests": {
+      "total": 38,
+      "pending": 0,
+      "failed": 0
+    },
+    "assertions": {
+      "total": 53,
+      "pending": 0,
+      "failed": 0
+    },
+    "testScripts": {
+      "total": 38,
+      "pending": 0,
+      "failed": 0
+    },
+    "prerequestScripts": {
+      "total": 15,
+      "pending": 0,
+      "failed": 0
+    }
+  },
+  "failures": [],
+  "responses": [
+    {
+      "name": "01 세션 및 테스트 계정 준비",
+      "method": "GET",
+      "status": 200,
+      "assertions": [
+        {
+          "name": "HTTP 200",
+          "passed": true
+        },
+        {
+          "name": "CSRF 계약",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "02 비로그인 회원 조회",
+      "method": "GET",
+      "status": 401,
+      "assertions": [
+        {
+          "name": "HTTP 401",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "03 회원가입",
+      "method": "POST",
+      "status": 201,
+      "assertions": [
+        {
+          "name": "HTTP 201",
+          "passed": true
+        },
+        {
+          "name": "회원 응답에 비밀번호 없음",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "03 회원가입",
+      "method": "POST",
+      "status": 201,
+      "assertions": [
+        {
+          "name": "HTTP 201",
+          "passed": true
+        },
+        {
+          "name": "회원 응답에 비밀번호 없음",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "04 중복 가입 차단",
+      "method": "POST",
+      "status": 409,
+      "assertions": [
+        {
+          "name": "HTTP 409",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "04 중복 가입 차단",
+      "method": "POST",
+      "status": 409,
+      "assertions": [
+        {
+          "name": "HTTP 409",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "05 로그인",
+      "method": "POST",
+      "status": 200,
+      "assertions": [
+        {
+          "name": "HTTP 200",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "05 로그인",
+      "method": "POST",
+      "status": 200,
+      "assertions": [
+        {
+          "name": "HTTP 200",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "06 내 정보",
+      "method": "GET",
+      "status": 200,
+      "assertions": [
+        {
+          "name": "HTTP 200",
+          "passed": true
+        },
+        {
+          "name": "동일 계정",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "07 프로필 수정",
+      "method": "PUT",
+      "status": 200,
+      "assertions": [
+        {
+          "name": "HTTP 200",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "07 프로필 수정",
+      "method": "PUT",
+      "status": 200,
+      "assertions": [
+        {
+          "name": "HTTP 200",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "08 아이디 찾기",
+      "method": "POST",
+      "status": 200,
+      "assertions": [
+        {
+          "name": "HTTP 200",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "08 아이디 찾기",
+      "method": "POST",
+      "status": 200,
+      "assertions": [
+        {
+          "name": "HTTP 200",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "09 시도 조회",
+      "method": "GET",
+      "status": 200,
+      "assertions": [
+        {
+          "name": "HTTP 200",
+          "passed": true
+        },
+        {
+          "name": "관광 응답 계약",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "10 시군구 조회",
+      "method": "GET",
+      "status": 200,
+      "assertions": [
+        {
+          "name": "HTTP 200",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "유형별 조회: 관광지",
+      "method": "GET",
+      "status": 200,
+      "assertions": [
+        {
+          "name": "HTTP 200",
+          "passed": true
+        },
+        {
+          "name": "유형 필터",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "유형별 조회: 숙박",
+      "method": "GET",
+      "status": 200,
+      "assertions": [
+        {
+          "name": "HTTP 200",
+          "passed": true
+        },
+        {
+          "name": "유형 필터",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "유형별 조회: 음식점",
+      "method": "GET",
+      "status": 200,
+      "assertions": [
+        {
+          "name": "HTTP 200",
+          "passed": true
+        },
+        {
+          "name": "유형 필터",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "유형별 조회: 문화시설",
+      "method": "GET",
+      "status": 200,
+      "assertions": [
+        {
+          "name": "HTTP 200",
+          "passed": true
+        },
+        {
+          "name": "유형 필터",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "유형별 조회: 공연",
+      "method": "GET",
+      "status": 200,
+      "assertions": [
+        {
+          "name": "HTTP 200",
+          "passed": true
+        },
+        {
+          "name": "유형 필터",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "유형별 조회: 여행코스",
+      "method": "GET",
+      "status": 200,
+      "assertions": [
+        {
+          "name": "HTTP 200",
+          "passed": true
+        },
+        {
+          "name": "유형 필터",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "유형별 조회: 쇼핑",
+      "method": "GET",
+      "status": 200,
+      "assertions": [
+        {
+          "name": "HTTP 200",
+          "passed": true
+        },
+        {
+          "name": "유형 필터",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "관광지 상세",
+      "method": "GET",
+      "status": 200,
+      "assertions": [
+        {
+          "name": "HTTP 200",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "잘못된 관광 페이지",
+      "method": "GET",
+      "status": 422,
+      "assertions": [
+        {
+          "name": "HTTP 422",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "여행 코스 등록",
+      "method": "POST",
+      "status": 201,
+      "assertions": [
+        {
+          "name": "HTTP 201",
+          "passed": true
+        },
+        {
+          "name": "방문 순서 저장",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "여행 코스 등록",
+      "method": "POST",
+      "status": 201,
+      "assertions": [
+        {
+          "name": "HTTP 201",
+          "passed": true
+        },
+        {
+          "name": "방문 순서 저장",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "게시글 목록",
+      "method": "GET",
+      "status": 200,
+      "assertions": [
+        {
+          "name": "HTTP 200",
+          "passed": true
+        },
+        {
+          "name": "작성자 목록",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "게시글 상세",
+      "method": "GET",
+      "status": 200,
+      "assertions": [
+        {
+          "name": "HTTP 200",
+          "passed": true
+        },
+        {
+          "name": "조회수 증가",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "게시글 수정",
+      "method": "PUT",
+      "status": 200,
+      "assertions": [
+        {
+          "name": "HTTP 200",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "게시글 수정",
+      "method": "PUT",
+      "status": 200,
+      "assertions": [
+        {
+          "name": "HTTP 200",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "수정된 검색 인덱스",
+      "method": "GET",
+      "status": 200,
+      "assertions": [
+        {
+          "name": "HTTP 200",
+          "passed": true
+        },
+        {
+          "name": "수정 반영",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "추천 API",
+      "method": "GET",
+      "status": 200,
+      "assertions": [
+        {
+          "name": "HTTP 200",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "주변 API",
+      "method": "GET",
+      "status": 200,
+      "assertions": [
+        {
+          "name": "HTTP 200",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "게시글 삭제",
+      "method": "DELETE",
+      "status": 200,
+      "assertions": [
+        {
+          "name": "HTTP 200",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "게시글 삭제",
+      "method": "DELETE",
+      "status": 200,
+      "assertions": [
+        {
+          "name": "HTTP 200",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "삭제 후 404",
+      "method": "GET",
+      "status": 404,
+      "assertions": [
+        {
+          "name": "HTTP 404",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "회원 탈퇴 시 함께 삭제할 글",
+      "method": "POST",
+      "status": 201,
+      "assertions": [
+        {
+          "name": "HTTP 201",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "회원 탈퇴 시 함께 삭제할 글",
+      "method": "POST",
+      "status": 201,
+      "assertions": [
+        {
+          "name": "HTTP 201",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "로그아웃",
+      "method": "POST",
+      "status": 200,
+      "assertions": [
+        {
+          "name": "HTTP 200",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "로그아웃",
+      "method": "POST",
+      "status": 200,
+      "assertions": [
+        {
+          "name": "HTTP 200",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "로그아웃 후 인증 차단",
+      "method": "GET",
+      "status": 401,
+      "assertions": [
+        {
+          "name": "HTTP 401",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "비밀번호 찾기 (local 전용)",
+      "method": "POST",
+      "status": 200,
+      "assertions": [
+        {
+          "name": "HTTP 200",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "비밀번호 찾기 (local 전용)",
+      "method": "POST",
+      "status": 200,
+      "assertions": [
+        {
+          "name": "HTTP 200",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "비밀번호 재설정",
+      "method": "POST",
+      "status": 200,
+      "assertions": [
+        {
+          "name": "HTTP 200",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "비밀번호 재설정",
+      "method": "POST",
+      "status": 200,
+      "assertions": [
+        {
+          "name": "HTTP 200",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "새 비밀번호 로그인",
+      "method": "POST",
+      "status": 200,
+      "assertions": [
+        {
+          "name": "HTTP 200",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "새 비밀번호 로그인",
+      "method": "POST",
+      "status": 200,
+      "assertions": [
+        {
+          "name": "HTTP 200",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "비밀번호 변경",
+      "method": "PUT",
+      "status": 200,
+      "assertions": [
+        {
+          "name": "HTTP 200",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "비밀번호 변경",
+      "method": "PUT",
+      "status": 200,
+      "assertions": [
+        {
+          "name": "HTTP 200",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "테스트 회원 탈퇴 및 정리",
+      "method": "DELETE",
+      "status": 200,
+      "assertions": [
+        {
+          "name": "HTTP 200",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "테스트 회원 탈퇴 및 정리",
+      "method": "DELETE",
+      "status": 200,
+      "assertions": [
+        {
+          "name": "HTTP 200",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "탈퇴 후 게시글도 삭제",
+      "method": "GET",
+      "status": 404,
+      "assertions": [
+        {
+          "name": "HTTP 404",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "탈퇴 후 세션 무효화",
+      "method": "GET",
+      "status": 401,
+      "assertions": [
+        {
+          "name": "HTTP 401",
+          "passed": true
+        }
+      ]
+    }
+  ]
+}
