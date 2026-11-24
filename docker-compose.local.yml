@@ -6,6 +6,11 @@ services:
     build:
       context: .
       dockerfile: deploy/db.Dockerfile
+  # 부하 테스트 수치를 서버(OCI A1)와 비슷한 조건에서 비교하려고 자원을 제한합니다.
+  backend-blue: &limits
+    cpus: 2
+    mem_limit: 2g
+  backend-green: *limits
   proxy:
     ports: !override
       - "8081:80"

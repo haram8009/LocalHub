@@ -9,7 +9,7 @@ x-backend: &backend
   depends_on:
     db:
       condition: service_healthy
-  environment:
+  environment: &backend-env
     SPRING_PROFILES_ACTIVE: mysql
     DB_URL: jdbc:mysql://db:3306/ssafy_trip?connectionTimeZone=Asia/Seoul&characterEncoding=UTF-8
     DB_USERNAME: ${DB_USERNAME:-ssafy}
@@ -52,10 +52,16 @@ services:
   backend-blue:
     <<: *backend
     image: ${IMAGE_PREFIX}-app:${BLUE_TAG:-latest}
+    environment:
+      <<: *backend-env
+      DEPLOY_COLOR: blue   # 지표 라벨(color)
 
   backend-green:
     <<: *backend
     image: ${IMAGE_PREFIX}-app:${GREEN_TAG:-latest}
+    environment:
+      <<: *backend-env
+      DEPLOY_COLOR: green
 
   # TLS 종단과 리버스 프록시. 활성 색은 ./upstream/active.caddy 가 가리키며,
   # 컨테이너를 재시작하지 않고 `caddy reload`(연결 유지)로 전환합니다.
@@ -90,7 +96,59 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
 
+  # ── 모니터링 (선택) ─────────────────────────────────────────────
+  # 기본 배포에는 포함되지 않습니다. 켜기: docker compose --profile monitoring up -d
+  # Grafana: ssh -L 3000:127.0.0.1:3000 <user>@<server>  →  http://localhost:3000
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    profiles: [monitoring]
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=15d
+      # k6 결과를 받기 위한 remote write 수신
+      - --web.enable-remote-write-receiver
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "127.0.0.1:9090:9090"
+
+  grafana:
+    image: grafana/grafana:12.1.1
+    profiles: [monitoring]
+    restart: unless-stopped
+    environment:
+      # 127.0.0.1 에만 열리지만 서버에서는 .env 에 꼭 바꿔 두세요. (필수(:?)로 두면 모니터링을 안 켜는 배포까지 막힙니다)
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on: [prometheus]
+
+  # MySQL 지표(커넥션, 쿼리 수, 잠금 대기, 버퍼 풀). PROCESS 권한이 필요해 root 로 접속합니다.
+  # 포트를 외부에 열지 않으며 Prometheus 만 내부 네트워크로 읽습니다.
+  mysqld-exporter:
+    image: prom/mysqld-exporter:v0.17.2
+    profiles: [monitoring]
+    restart: unless-stopped
+    command:
+      - --mysqld.address=db:3306
+      - --mysqld.username=root
+    environment:
+      MYSQLD_EXPORTER_PASSWORD: ${DB_ROOT_PASSWORD}
+    depends_on:
+      db:
+        condition: service_healthy
+
 volumes:
   mysql_data:
   caddy_data:
   caddy_config:
+  prometheus_data:
+  grafana_data:

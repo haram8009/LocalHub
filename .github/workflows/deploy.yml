@@ -112,6 +112,8 @@ jobs:
           H="${{ secrets.OCI_USER }}@${{ secrets.OCI_HOST }}"
           ssh -i ~/.ssh/id_deploy "$H" "mkdir -p ~/enjoytrip"
           scp -i ~/.ssh/id_deploy docker-compose.yml deploy/Caddyfile deploy/deploy.sh deploy/rollback.sh deploy/lib.sh "$H:~/enjoytrip/"
+          # 모니터링 설정(선택 프로필). 켜져 있지 않으면 쓰이지 않습니다.
+          scp -r -i ~/.ssh/id_deploy monitoring "$H:~/enjoytrip/"
       - name: Blue/green deploy
         env:
           TAG: ${{ github.sha }}

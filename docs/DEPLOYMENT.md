@@ -151,6 +151,29 @@ bash rollback.sh
 
 `~/backup` 디렉터리를 먼저 만들고, 가능하면 OCI Object Storage 등 다른 곳에도 복사하세요.
 
+## 모니터링 (Prometheus + Grafana)
+
+compose의 `monitoring` 프로필로 분리되어 있어서 켜지 않으면 배포에 영향이 없습니다.
+
+```bash
+cd ~/enjoytrip
+docker compose --profile monitoring up -d prometheus grafana mysqld-exporter
+# 내 PC에서 터널을 열고 http://localhost:3000 (admin / .env 의 GRAFANA_ADMIN_PASSWORD)
+ssh -L 3000:127.0.0.1:3000 -L 9090:127.0.0.1:9090 <user>@<server>
+```
+
+| 수집 대상 | 경로 | 내용 |
+|---|---|---|
+| backend-blue / green | `:8080/actuator/prometheus` | HTTP 지연 히스토그램(엔드포인트별), JVM, Hikari, Tomcat. 모든 지표에 `color` 라벨 |
+| proxy (Caddy) | `:2020/metrics` | 사용자가 실제로 받은 상태 코드와 지연 |
+| mysqld-exporter | `:9104` | 쿼리 수, 실행 중 스레드, 행 잠금 대기, 데드락 |
+| k6 | remote write | 부하 테스트 중 VU, 요청 수, p95/p99 (`docs/LOAD_TEST.md`) |
+
+- 대시보드 **EnjoyTrip 개요**는 `monitoring/grafana/dashboards/enjoytrip.json`에서 자동 등록됩니다(UI 수정은 저장되지 않으니 파일을 고치세요).
+- `/actuator/*`와 Caddy 지표 포트(2020)는 호스트에 열리지 않습니다. Prometheus(9090), Grafana(3000)도 `127.0.0.1`에만 바인딩됩니다.
+- 정지된 색은 `up=0`으로 보입니다. 정상입니다.
+- 보관 기간은 15일(`--storage.tsdb.retention.time`)입니다.
+
 ## 로컬에서 먼저 검증
 
 Docker Desktop(또는 Docker Engine)을 켠 뒤, 저장소 루트에서 Git Bash로 실행합니다. 아래는 서버와 같은 `deploy.sh`를 로컬 이미지로 돌려 보는 방법입니다.
@@ -167,7 +190,7 @@ bash deploy/deploy.sh v2      # 무중단 전환 (green)
 bash deploy/rollback.sh       # blue 로 복귀
 ```
 
-`http://localhost:8081`로 접속합니다. 정리는 `docker compose down -v`(DB 볼륨까지 삭제)와 `rm -rf upstream .deploy-state`입니다.
+`http://localhost:8081`로 접속합니다. 모니터링까지 보려면 `export COMPOSE_PROFILES=monitoring`을 추가하고 `docker compose up -d prometheus grafana mysqld-exporter` 후 `http://localhost:3000`(admin/admin)을 엽니다. 로컬 오버라이드는 백엔드를 2 CPU / 2GB로 제한합니다. 정리는 `docker compose down -v`(DB 볼륨까지 삭제)와 `rm -rf upstream .deploy-state`입니다.
 
 ## 알려진 제한
 
