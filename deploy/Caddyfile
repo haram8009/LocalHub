@@ -1,0 +1,30 @@
+# SITE_ADDRESS
+#   운영: 도메인 (예: localhub.duckdns.org) → Let's Encrypt 인증서를 자동 발급·갱신합니다.
+#   로컬 테스트: :80 → HTTPS 없이 HTTP 로만 동작합니다.
+{$SITE_ADDRESS::80} {
+	encode zstd gzip
+
+	header {
+		X-Content-Type-Options nosniff
+		X-Frame-Options SAMEORIGIN
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+
+	handle /api/* {
+		reverse_proxy backend:8080
+	}
+
+	handle {
+		root * /srv
+		# SPA: 존재하지 않는 경로는 index.html 로 (Vue Router history 모드)
+		try_files {path} /index.html
+		file_server
+	}
+
+	# 해시가 붙은 정적 자원은 오래 캐시하고 index.html 은 항상 재검증합니다.
+	@assets path /assets/*
+	header @assets Cache-Control "public, max-age=31536000, immutable"
+	@index path / /index.html
+	header @index Cache-Control "no-cache"
+}

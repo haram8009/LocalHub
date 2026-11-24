@@ -1,0 +1,84 @@
+# 운영용 Compose. 서버에는 이 파일과 .env 만 있으면 됩니다(이미지는 레지스트리에서 pull).
+# 로컬에서 빌드해 보려면: docker compose -f docker-compose.yml -f docker-compose.local.yml up --build
+name: enjoytrip
+
+services:
+  db:
+    image: ${IMAGE_PREFIX:?IMAGE_PREFIX is required}-db:${TAG:-latest}
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?DB_ROOT_PASSWORD is required}
+      MYSQL_DATABASE: ssafy_trip
+      MYSQL_USER: ${DB_USERNAME:-ssafy}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      TZ: Asia/Seoul
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_0900_ai_ci"]
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      # 첫 기동에는 관광지 덤프 적재로 1~3분이 걸립니다.
+      start_period: 180s
+
+  backend:
+    image: ${IMAGE_PREFIX}-backend:${TAG:-latest}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: mysql
+      DB_URL: jdbc:mysql://db:3306/ssafy_trip?connectionTimeZone=Asia/Seoul&characterEncoding=UTF-8
+      DB_USERNAME: ${DB_USERNAME:-ssafy}
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required (32+ bytes)}
+      JWT_COOKIE_SECURE: ${JWT_COOKIE_SECURE:-true}
+      KAKAO_REST_API_KEY: ${KAKAO_REST_API_KEY:-}
+      SEED_DEMO: ${SEED_DEMO:-false}
+      JAVA_OPTS: ${JAVA_OPTS:--XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError}
+      TZ: Asia/Seoul
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/actuator/health/readiness || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 40s
+
+  web:
+    image: ${IMAGE_PREFIX}-web:${TAG:-latest}
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?SITE_ADDRESS is required (domain, or :80 for local)}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:80/ || wget -q --spider --no-check-certificate https://localhost/ || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  # 컨테이너 로그를 실시간으로 보는 웹 UI. 로컬호스트에만 열려 있으므로 SSH 터널로 접속하세요.
+  #   ssh -L 8888:127.0.0.1:8888 <user>@<server>  →  http://localhost:8888
+  dozzle:
+    image: amir20/dozzle:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8888:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+volumes:
+  mysql_data:
+  caddy_data:
+  caddy_config:

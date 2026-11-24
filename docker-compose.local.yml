@@ -1,0 +1,18 @@
+# 로컬 검증용 오버라이드: 레지스트리 대신 소스를 직접 빌드하고 HTTP(8081)로 접속합니다.
+#   docker compose -f docker-compose.yml -f docker-compose.local.yml --env-file deploy/local.env up --build -d
+services:
+  db:
+    build:
+      context: .
+      dockerfile: deploy/db.Dockerfile
+  backend:
+    build:
+      context: backend
+  web:
+    build:
+      context: .
+      dockerfile: deploy/web.Dockerfile
+      args:
+        VITE_KAKAO_MAP_JAVASCRIPT_KEY: ${VITE_KAKAO_MAP_JAVASCRIPT_KEY:-}
+    ports: !override
+      - "8081:80"
