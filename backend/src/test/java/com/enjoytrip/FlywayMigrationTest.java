@@ -49,9 +49,11 @@ class FlywayMigrationTest extends MySqlIntegrationTest {
                 var members = s.executeQuery("SELECT COUNT(*) FROM members WHERE id='legacy'");
                 members.next();
                 assertThat(members.getInt(1)).isEqualTo(1);
-                var history = s.executeQuery("SELECT COUNT(*) FROM flyway_schema_history WHERE success=1");
-                history.next();
-                assertThat(history.getInt(1)).isEqualTo(2); // baseline(0) + V1
+                var history = s.executeQuery("SELECT version FROM flyway_schema_history WHERE success=1 ORDER BY installed_rank");
+                var versions = new java.util.ArrayList<String>();
+                while (history.next()) versions.add(history.getString(1));
+                // baseline(0) 이후 모든 마이그레이션이 적용됩니다.
+                assertThat(versions).startsWith("0", "1").contains("2");
             }
         } finally {
             try (var admin = dataSource.getConnection(); var s = admin.createStatement()) {

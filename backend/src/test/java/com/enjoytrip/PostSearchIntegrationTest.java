@@ -24,6 +24,7 @@ class PostSearchIntegrationTest extends MySqlIntegrationTest {
     @Autowired PlatformTransactionManager manager;
 
     @Autowired PostSearchIndexRepository index;
+    @Autowired SearchIndexMapper mapper;
     @Autowired MockMvc mvc;
     TransactionTemplate tx;
     @BeforeEach void clear() { tx = new TransactionTemplate(manager); posts.deleteAll(); }
@@ -104,6 +105,20 @@ class PostSearchIntegrationTest extends MySqlIntegrationTest {
         mvc.perform(get("/api/posts/search").param("query", "부산")).andExpect(jsonPath("total").value(1));
         initializer.run();
         mvc.perform(get("/api/posts/search").param("query", "부산")).andExpect(jsonPath("total").value(1));
+    }
+
+    @Test void startupSyncRestoresDictionaryForPostsWrittenWithoutIt() {
+        add("제주오름", "새벽 산책", "COURSE", "one");
+        add("제주바다", "새벽 수영", "COURSE", "two");
+        // 사전을 모르는 이전 버전(블루그린의 옛 색)이 쓴 글을 흉내 냅니다: postings 만 있고 사전은 비어 있음.
+        tx.executeWithoutResult(status -> mapper.clearTerms());
+        assertThat(search.search(Map.of("query", "제주")).get("total")).isEqualTo(0L);
+        initializer.run();
+        assertThat(search.search(Map.of("query", "제주")).get("total")).isEqualTo(2L);
+        assertThat(search.search(Map.of("query", "새벽 수영")).get("total")).isEqualTo(1L);
+        // 다시 실행해도 중복으로 들어가지 않습니다.
+        Integer again = tx.execute(status -> index.syncTerms());
+        assertThat(again).isZero();
     }
 
     @Test void snapshotReadDoesNotMixOldPostingsWithNewPostContentAndDoesNotBlockWriters() {
