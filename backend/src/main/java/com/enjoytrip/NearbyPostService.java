@@ -19,7 +19,8 @@ public class NearbyPostService {
 
     record Ranked(long id, Instant createdAt, double distanceKm, PostRepository.NearbyPoint location) {}
 
-    @Transactional(readOnly = true, isolation = Isolation.SERIALIZABLE)
+    // InnoDB REPEATABLE READ: 첫 읽기 시점의 스냅샷을 잠금 없이 끝까지 읽습니다(쓰기를 막지 않음).
+    @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public Map<String, Object> nearby(double latitude, double longitude, int limit) {
         if (!validCoordinate(latitude, longitude))
             throw new ApiException(400, "국내 위치의 올바른 위도와 경도를 입력해 주세요.");

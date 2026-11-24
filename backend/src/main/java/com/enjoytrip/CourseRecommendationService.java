@@ -17,7 +17,8 @@ public class CourseRecommendationService {
     record Ranked(long id, Instant createdAt, CourseSimilarityCalculator.Similarity similarity) {}
 
     // All multi-query reads observe the same snapshot, including edits/deletes.
-    @Transactional(readOnly = true, isolation = Isolation.SERIALIZABLE)
+    // InnoDB REPEATABLE READ: 첫 읽기 시점의 스냅샷을 잠금 없이 끝까지 읽습니다(쓰기를 막지 않음).
+    @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public Map<String, Object> recommend(long postId, int limit) {
         if (limit < 1 || limit > 10) throw new ApiException(400, "추천 개수는 1~10이어야 합니다.");
         if (!posts.existsById(postId)) throw new ApiException(404, "게시글을 찾을 수 없습니다.");

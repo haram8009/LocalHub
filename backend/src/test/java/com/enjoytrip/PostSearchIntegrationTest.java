@@ -106,35 +106,31 @@ class PostSearchIntegrationTest extends MySqlIntegrationTest {
         mvc.perform(get("/api/posts/search").param("query", "부산")).andExpect(jsonPath("total").value(1));
     }
 
-    @Test void serializableReadDoesNotMixOldPostingsWithNewPostContent() {
+    @Test void snapshotReadDoesNotMixOldPostingsWithNewPostContentAndDoesNotBlockWriters() {
         var original = add("부산여행", "바다", "COURSE", "one");
         var reader = new TransactionTemplate(manager);
         reader.setReadOnly(true);
-        reader.setIsolationLevel(org.springframework.transaction.TransactionDefinition.ISOLATION_SERIALIZABLE);
+        reader.setIsolationLevel(org.springframework.transaction.TransactionDefinition.ISOLATION_REPEATABLE_READ);
         var pool = java.util.concurrent.Executors.newSingleThreadExecutor();
         try {
-            var writer = reader.execute(status -> {
-                // InnoDB SERIALIZABLE uses shared locks: the writer commits after the reader.
+            reader.executeWithoutResult(status -> {
+                // 첫 읽기에서 InnoDB 스냅샷이 고정됩니다.
                 assertThat(posts.findWithLocationsByIds(List.of(original.id)).get(0).title).isEqualTo("부산여행");
                 assertThat(index.findContaining(List.of("부산"))).hasSize(1);
-                var started = new java.util.concurrent.CountDownLatch(1);
-                var pending = pool.submit(() -> tx.executeWithoutResult(write -> {
-                    started.countDown();
+                // 읽기 도중의 쓰기는 기다리지 않고 바로 커밋됩니다(공유 잠금 없음).
+                var writer = pool.submit(() -> tx.executeWithoutResult(write -> {
                     var p = posts.findLockedById(original.id).orElseThrow();
                     p.title = "서울여행"; posts.saveAndFlush(p); indexer.replace(p);
                 }));
-                try {
-                    assertThat(started.await(5, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
-                    assertThatThrownBy(() -> pending.get(200, java.util.concurrent.TimeUnit.MILLISECONDS))
-                        .isInstanceOf(java.util.concurrent.TimeoutException.class);
-                } catch (InterruptedException e) { Thread.currentThread().interrupt(); throw new AssertionError(e); }
+                try { writer.get(5, java.util.concurrent.TimeUnit.SECONDS); }
+                catch (Exception e) { throw new AssertionError("읽기 트랜잭션이 쓰기를 막았습니다", e); }
+                // 커밋 이후에도 같은 트랜잭션 안에서는 본문과 색인이 모두 옛 버전입니다(섞이지 않음).
                 assertThat(posts.findWithLocationsByIds(List.of(original.id)).get(0).title).isEqualTo("부산여행");
+                assertThat(index.findContaining(List.of("부산"))).hasSize(1);
                 assertThat(index.findContaining(List.of("서울"))).isEmpty();
-                return pending;
             });
-            writer.get(5, java.util.concurrent.TimeUnit.SECONDS);
-        } catch (Exception e) { throw new AssertionError(e); }
-        finally { pool.shutdownNow(); }
+        } finally { pool.shutdownNow(); }
         assertThat(search.search(Map.of("query", "서울")).get("total")).isEqualTo(1L);
+        assertThat(search.search(Map.of("query", "부산")).get("total")).isEqualTo(0L);
     }
 }

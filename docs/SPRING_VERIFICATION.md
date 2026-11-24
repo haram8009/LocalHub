@@ -28,7 +28,7 @@ cd backend
 
 MySQL 서버가 실행되어 있어야 한다. `backend/.env`의 접속 정보를 기본으로 사용하며 `TEST_DB_HOST`, `TEST_DB_PORT`, `TEST_DB_USERNAME`, `TEST_DB_PASSWORD`로 테스트 전용 계정을 지정할 수 있다. 계정에는 테스트 DB 생성·삭제 권한이 필요하다. 서비스 DB 이름은 연결 대상으로 사용하지 않는다.
 
-동시성 테스트는 InnoDB의 `SERIALIZABLE` 공유 잠금에 따라 읽기 트랜잭션 동안 쓰기가 대기하고, 읽기 종료 후 쓰기 및 검색 인덱스 변경이 커밋되는 것을 확인한다.
+동시성 테스트는 InnoDB `REPEATABLE_READ` 읽기 전용 트랜잭션 도중 쓰기가 기다리지 않고 커밋되며, 그 뒤에도 같은 읽기 트랜잭션 안에서는 게시글 본문과 검색 인덱스가 모두 이전 버전으로 보이는 것(버전 혼합 없음)을 확인한다. 이 보장은 MySQL(InnoDB) 기준이며, 로컬 개발용 H2에서는 확인하지 않는다.
 
 Gradle 테스트 리포트: `backend/build/reports/tests/test/index.html`.
 

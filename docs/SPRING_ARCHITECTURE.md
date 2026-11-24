@@ -76,7 +76,7 @@ classDiagram
 | 상세 조회 | `PostService.detail`: 조회수 변경이므로 쓰기 트랜잭션 | 글 행 잠금 후 SQL에서 `view_count + 1`; 장소는 다시 저장하지 않음 |
 | 회원 탈퇴 | `AccountService.withdraw`: 인덱스 + 작성 글/장소 + 회원 삭제 | 회원 행 잠금; 삭제 실패 시 전체 롤백; 커밋 후 세션 종료 |
 | 비밀번호 변경·재설정 | 해시와 `credential_version`을 함께 갱신 | 회원 행 잠금; 커밋 후 현재 세션 버전 갱신 또는 종료 |
-| 검색·코스 추천·주변 추천 | 읽기 전용 `SERIALIZABLE` | 여러 SQL이 동일한 스냅샷을 보도록 기존 일관성 보장 유지 |
+| 검색·코스 추천·주변 추천 | 읽기 전용 `REPEATABLE_READ` (InnoDB 일관된 스냅샷) | 여러 SQL이 첫 읽기 시점의 같은 스냅샷을 보며, 공유 잠금을 걸지 않아 쓰기를 막지 않음. 이전 `SERIALIZABLE`은 부하 시 교착 상태를 일으켜 변경(docs/LOAD_TEST.md) |
 | 검색 인덱스 갱신 | `PostSearchIndexer`: `MANDATORY` | 호출자의 트랜잭션 없이는 실행 불가 |
 | 기존 글 인덱스 재구축 | `SearchIndexInitializer.run` 전체 트랜잭션 | 100개 단위 조회, 완료 후 버전 기록; 실패 시 롤백 |
 

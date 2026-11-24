@@ -19,7 +19,8 @@ public class PostSearchService {
         this.index = index; this.normalizer = normalizer; this.operations = operations;
         this.posts = posts; this.latest = latest;
     }
-    @Transactional(readOnly = true, isolation = Isolation.SERIALIZABLE)
+    // InnoDB REPEATABLE READ: 첫 읽기 시점의 스냅샷을 잠금 없이 끝까지 읽습니다(쓰기를 막지 않음).
+    @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public Map<String, Object> search(Map<String, String> params) {
         String text = params.getOrDefault("query", "");
         int page = positive(params.getOrDefault("page", "1")), size = positive(params.getOrDefault("size", "10"));
