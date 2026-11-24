@@ -1140,7 +1140,7 @@
     },
     {
       "type": "timeseries",
-      "title": "k6 요청 수",
+      "title": "k6 요청 수 (엔드포인트별)",
       "id": 25,
       "datasource": {
         "type": "prometheus",
@@ -1161,7 +1161,7 @@
             "fillOpacity": 10,
             "showPoints": "never",
             "stacking": {
-              "mode": "none"
+              "mode": "normal"
             }
           }
         },
@@ -1183,21 +1183,21 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum by (scenario) (rate(k6_http_reqs_total[$__rate_interval]))",
-          "legendFormat": "{{scenario}}",
+          "expr": "sum by (name) (rate(k6_http_reqs_total{name!=\"setup\"}[$__rate_interval]))",
+          "legendFormat": "{{name}}",
           "refId": "A"
         }
       ]
     },
     {
       "type": "timeseries",
-      "title": "k6 응답 시간 p95 / p99",
+      "title": "k6 응답 시간 p95 (엔드포인트별)",
       "id": 26,
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "",
+      "description": "k6 가 측정한 사용자 체감 시간. 백엔드 p95 와 차이가 크면 프록시·네트워크 대기입니다.",
       "gridPos": {
         "h": 8,
         "w": 8,
@@ -1234,18 +1234,9 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "max(k6_http_req_duration_p95)",
-          "legendFormat": "p95",
+          "expr": "max by (name) (k6_http_req_duration_p95{name!=\"setup\"})",
+          "legendFormat": "{{name}}",
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "max(k6_http_req_duration_p99)",
-          "legendFormat": "p99",
-          "refId": "B"
         }
       ]
     }

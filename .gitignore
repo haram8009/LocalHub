@@ -53,3 +53,6 @@ data/
 # 블루그린 배포 상태(로컬 테스트용)
 upstream/
 .deploy-state
+
+# k6 결과(요약 JSON)
+loadtest/results/
