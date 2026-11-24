@@ -1,5 +1,9 @@
 server:
   port: 8080
+  tomcat:
+    # Tomcat 스레드 풀 지표(tomcat_threads_*)를 내보내려면 필요합니다.
+    mbeanregistry:
+      enabled: true
 spring:
   config:
     import:
@@ -42,12 +46,26 @@ management:
   endpoints:
     web:
       exposure:
-        include: health
+        # /actuator/* 는 Caddy 가 외부에서 막습니다. Prometheus 는 Docker 내부 네트워크로만 수집합니다.
+        include: health,prometheus
   endpoint:
     health:
       probes:
         enabled: true
       show-details: never
+  metrics:
+    tags:
+      application: enjoytrip
+      # 블루/그린 중 어느 색이 응답했는지 그래프에서 구분합니다.
+      color: ${DEPLOY_COLOR:local}
+    distribution:
+      # 서버 쪽 p95/p99 를 Prometheus 에서 histogram_quantile 로 계산하기 위한 버킷
+      percentiles-histogram:
+        http.server.requests: true
+      minimum-expected-value:
+        http.server.requests: 5ms
+      maximum-expected-value:
+        http.server.requests: 10s
 
 mybatis:
   mapper-locations: classpath:mappers/*.xml
