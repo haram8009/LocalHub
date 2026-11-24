@@ -1,24 +1,29 @@
 # REST API
 
-기본 경로는 `/api`입니다. JSON을 사용하고, 로그인은 HttpOnly `JSESSIONID` 쿠키 기반 서버 세션으로 관리합니다. 로그인 상태를 브라우저 저장소로 판단하지 않습니다.
+기본 경로는 `/api`입니다. JSON을 사용하고, 인증은 **JWT**로 처리합니다. 서버는 세션을 만들지 않습니다(stateless).
+
+- **액세스 토큰**: 로그인 응답 본문의 `accessToken`(HS256, 기본 30분). 보호된 요청에 `Authorization: Bearer <accessToken>` 헤더로 보냅니다. 클라이언트는 메모리에만 보관합니다.
+- **리프레시 토큰**: HttpOnly·SameSite=Strict 쿠키 `refreshToken`(경로 `/api/auth`, 기본 14일). 서버에는 SHA-256 해시만 저장하며 1회용입니다(`/auth/refresh` 호출마다 회전).
+- 비밀번호 변경·재설정 시 `credential_version`이 올라가 기존 액세스 토큰이 즉시 무효화되고 리프레시 토큰도 모두 폐기됩니다.
+- Bearer 헤더가 인증 수단이므로 CSRF 토큰은 사용하지 않습니다(`/auth/csrf` 제거).
 
 ## 인증과 회원
 
-| Method | 경로 | 요청/응답 요약 |
-|---|---|---|
-| GET | `/auth/csrf` | `{ token, headerName }` 발급 |
-| POST | `/auth/signup` | `{ userId, password, name, email }` → `{ id, name, email }` (201) |
-| POST | `/auth/login` | `{ userId, password }` → `{ id, name, email }`, 세션 ID 교체 |
-| POST | `/auth/logout` | 세션 종료 |
-| GET | `/auth/me` | 현재 회원 조회, 비로그인 시 401 |
-| PUT | `/auth/profile` | `{ name, email }` → 수정된 회원 |
-| PUT | `/auth/password` | `{ currentPassword, newPassword }`, 다른 세션 무효화 |
-| DELETE | `/auth/me` | `{ password }`, 본인 게시글과 회원 삭제 |
-| POST | `/auth/find-id` | `{ name, email }` → `{ maskedUserId, createdAt }` |
-| POST | `/auth/reset-target` | `{ userId, email }` → `{ userId, email, devResetCode }`, local 전용 |
-| POST | `/auth/reset-password` | `{ code, password }`, 발급 세션 필요, 10분/5회 제한, 사용 후 세션 종료 |
+| Method | 경로 | 인증 | 요청/응답 요약 |
+|---|---|---|---|
+| POST | `/auth/signup` | - | `{ userId, password, name, email }` → `{ id, name, email }` (201) |
+| POST | `/auth/login` | - | `{ userId, password }` → `{ accessToken, tokenType, expiresIn, user }` + 리프레시 쿠키 |
+| POST | `/auth/refresh` | 쿠키 | 리프레시 쿠키 → 새 `{ accessToken, ... }` + 새 쿠키, 실패 시 401 |
+| POST | `/auth/logout` | 쿠키 | 리프레시 토큰 폐기, 쿠키 삭제 |
+| GET | `/auth/me` | Bearer | 현재 회원 조회, 비로그인 시 401 |
+| PUT | `/auth/profile` | Bearer | `{ name, email }` → 수정된 회원 |
+| PUT | `/auth/password` | Bearer | `{ currentPassword, newPassword }` → 새 `{ accessToken, ... }`, 다른 기기 토큰 무효화 |
+| DELETE | `/auth/me` | Bearer | `{ password }`, 본인 게시글과 회원 삭제 |
+| POST | `/auth/find-id` | - | `{ name, email }` → `{ maskedUserId, createdAt }` |
+| POST | `/auth/reset-target` | - | `{ userId, email }` → `{ userId, email, devResetCode }`, local 전용, 1분 간격 |
+| POST | `/auth/reset-password` | - | `{ userId, code, password }`, 10분/5회 제한, 사용 후 코드 폐기 |
 
-GET 이외 요청은 먼저 `/auth/csrf`를 호출한 뒤 받은 `headerName` 헤더에 `token` 값을 넣습니다. CSRF 발급·로그인·변경 요청 모두 같은 쿠키 세션을 유지해야 합니다. 프론트엔드 `backendRequest`가 이 과정을 처리합니다. 로그아웃·탈퇴·재설정 후에는 캐시한 CSRF 토큰을 지웁니다. CSRF 실패 시 쓰기 요청을 자동 재전송하지 않습니다.
+게시글 `POST/PUT/DELETE`는 Bearer 토큰이 필요하며, 없거나 만료·변조된 토큰은 401입니다. 조회(GET)는 공개입니다. 프론트엔드 `backendRequest`가 헤더 부착과 401 시 1회 자동 재발급·재시도를 처리합니다. 서버 설정: `JWT_SECRET`(32바이트 이상, 미설정 시 기동마다 임의 키), `JWT_ACCESS_EXPIRY_SECONDS`, `JWT_REFRESH_EXPIRY_SECONDS`, `JWT_COOKIE_SECURE`(HTTPS면 true).
 
 회원 아이디는 영문 소문자/숫자 4~20자, 비밀번호는 영문/숫자/특수문자를 포함한 공백 없는 8~20자입니다. 이메일은 소문자로 저장하며 중복을 DB에서도 제한합니다. 새 비밀번호는 서버에서 Argon2id로 해시합니다. 기존 BCrypt 회원은 로그인 성공 시 자동으로 업그레이드하며 응답에는 해시를 포함하지 않습니다.
 
@@ -67,7 +72,7 @@ GET 이외 요청은 먼저 `/auth/csrf`를 호출한 뒤 받은 `headerName` �
 |---|---|---|
 | GET | `/tour/{operation}` | MySQL 모드에서는 DB 조회, API 모드에서는 KorService2 요청 |
 | GET | `/regions?x=경도&y=위도` | 카카오 좌표→행정구역 |
-| POST | `/directions` | 카카오 다중 경유지 길찾기, CSRF 필요 |
+| POST | `/directions` | 카카오 다중 경유지 길찾기 |
 
 관광 작업: `ldongCode2`, `areaBasedList2`, `locationBasedList2`, `searchKeyword2`, `detailCommon2`, `detailIntro2`, `detailImage2`, `detailInfo2`.
 
@@ -84,7 +89,7 @@ DB 모드 목록 조건은 `lDongRegnCd`(시도), `lDongSignguCd`(구군), `cont
 
 길찾기 요청은 `{ origin: { name, x, y }, destination: { name, x, y }, waypoints: [...] }`입니다. 경유지는 최대 30곳이고 좌표 범위를 서버에서도 검증합니다. 응답은 기존 Vue 정규화 함수를 사용하도록 제공자 응답 형식을 유지합니다. 외부 요청은 연결 5초, 읽기 15초 제한을 둡니다.
 
-오류 응답: `{ "message": "안내 문구", "field": "email" }` 등. 주요 상태 코드는 401(로그인 필요), 403(권한/비밀번호/CSRF), 404(없음), 409(중복), 422(검증), 429(재설정 재요청 제한), 502(외부 서버 오류), 503(키 미설정 또는 비활성 기능)입니다.
+오류 응답: `{ "message": "안내 문구", "field": "email" }` 등. 주요 상태 코드는 401(로그인 필요), 403(권한/비밀번호), 404(없음), 409(중복), 422(검증), 429(재설정 재요청 제한), 502(외부 서버 오류), 503(키 미설정 또는 비활성 기능)입니다.
 
 ## 알고리즘 API
 

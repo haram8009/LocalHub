@@ -4,7 +4,6 @@ import java.util.List;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -19,13 +18,13 @@ class TransactionIntegrationTest extends MySqlIntegrationTest {
     @Autowired PostSearchIndexRepository index;
     @MockitoSpyBean SearchIndexMapper indexMapper;
     @MockitoSpyBean MemberMapper memberMapper;
-    MockHttpSession session;
+    AuthPrincipal session;
     static final String PASSWORD="Test1234!";
 
     @BeforeEach void setup() {
         posts.deleteAll(); members.deleteAll();
         accounts.signup(new AuthRequests.Signup("tester",PASSWORD,"여행자","tester@example.com"));
-        session=new MockHttpSession(); session.setAttribute("memberId","tester"); session.setAttribute("credentialVersion",0L);
+        session=new AuthPrincipal("tester",0L);
     }
     PostInput input(String title) {
         var location=new PostLocation(); location.name="서울"; location.contentId="101";
@@ -47,14 +46,13 @@ class TransactionIntegrationTest extends MySqlIntegrationTest {
         assertThat(index.findContaining(List.of("부산"))).hasSize(1);
         assertThat(index.findContaining(List.of("서울"))).isEmpty();
     }
-    @Test void failedWithdrawalRestoresMemberPostsIndexAndSession() {
+    @Test void failedWithdrawalRestoresMemberPostsAndIndex() {
         service.create(input("부산여행"),session);
         doThrow(new IllegalStateException("member delete failure")).when(memberMapper).delete("tester");
         assertThatThrownBy(()->accounts.withdraw(new AuthRequests.Password(PASSWORD),session)).isInstanceOf(IllegalStateException.class);
         assertThat(members.existsById("tester")).isTrue();
         assertThat(posts.count()).isEqualTo(1);
         assertThat(index.findContaining(List.of("부산"))).hasSize(1);
-        assertThat(session.isInvalid()).isFalse();
         assertThat(accounts.me(session).id()).isEqualTo("tester");
     }
 }

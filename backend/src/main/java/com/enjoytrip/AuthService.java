@@ -1,6 +1,5 @@
 package com.enjoytrip;
 
-import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Service;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import java.util.Locale;
@@ -15,17 +14,17 @@ public class AuthService {
         if (value == null || !value.matches("(?s)(?=.*[A-Za-z])(?=.*[0-9])(?=.*[^A-Za-z0-9\\s])[^\\s]{8,20}"))
             throw new ApiException(422, "비밀번호는 영문, 숫자, 특수문자를 포함한 8~20자로 입력해 주세요.", "password");
     }
-    public Member require(HttpSession session) {
-        return require(session, false);
+    public Member require(AuthPrincipal principal) {
+        return require(principal, false);
     }
-    public Member requireForUpdate(HttpSession session) {
-        return require(session, true);
+    public Member requireForUpdate(AuthPrincipal principal) {
+        return require(principal, true);
     }
-    private Member require(HttpSession session, boolean lock) {
-        var id = session.getAttribute("memberId");
-        var member = id instanceof String s
-            ? (lock ? members.findLockedById(s) : members.findById(s)).orElse(null) : null;
-        if (member == null || !Long.valueOf(member.credentialVersion).equals(session.getAttribute("credentialVersion")))
+    private Member require(AuthPrincipal principal, boolean lock) {
+        var member = principal == null ? null
+            : (lock ? members.findLockedById(principal.id()) : members.findById(principal.id())).orElse(null);
+        // credentialVersion changes on password change/reset, which revokes every previously issued token.
+        if (member == null || member.credentialVersion != principal.credentialVersion())
             throw new ApiException(401, "로그인이 필요합니다.");
         return member;
     }

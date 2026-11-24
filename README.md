@@ -174,6 +174,7 @@ npm run dev
 | 백엔드 | `SPRING_PROFILES_ACTIVE` | MySQL 개발 환경은 `local,mysql`, 기본값은 `local` |
 | 백엔드 | `DB_URL` | JDBC 접속 URL |
 | 백엔드 | `DB_USERNAME`, `DB_PASSWORD` | DB 계정 및 비밀번호 |
+| 백엔드 | `JWT_SECRET` | JWT 서명 키(32바이트 이상). 미설정 시 기동마다 임의 생성 |
 | 백엔드 | `SEED_DEMO` | 게시글이 비어 있을 때 샘플 생성 여부, 기본값 `true` |
 | 백엔드 | `TOUR_SOURCE` | 기본 프로필의 관광정보 소스, 기본값 `api`. `mysql` 프로필은 `database` 사용 |
 | 백엔드 | `TOUR_API_KEY` | 외부 TourAPI 모드에서 사용하는 Decoding 키 |
@@ -227,7 +228,7 @@ java -jar build/libs/enjoytrip-backend-0.0.1-SNAPSHOT.jar
 
 ## 참고 사항
 
-- 로그인은 서버 세션을 사용하므로 백엔드를 재시작하면 다시 로그인해야 합니다.
+- 로그인은 JWT(액세스 토큰 + HttpOnly 리프레시 쿠키)를 사용합니다. `JWT_SECRET`을 설정하지 않으면 기동마다 임의 키가 생성되어 백엔드를 재시작할 때 다시 로그인해야 합니다. 운영에서는 32바이트 이상의 `JWT_SECRET`을 지정하세요.
 - 비밀번호 재설정은 `local` 프로필에서 개발용 인증 코드를 반환합니다. 이메일 발송은 구현되어 있지 않습니다.
 - DB 모드는 제공된 관광 유형과 지역 코드를 사용하며, 외부 TourAPI의 세부 분류는 지원하지 않습니다.
 - `SEED_DEMO=false`로 샘플 게시글 생성을 끌 수 있습니다. 샘플 작성자 계정으로는 로그인할 수 없습니다.

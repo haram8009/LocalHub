@@ -28,7 +28,11 @@ export const useAuthStore = defineStore('auth', {
     },
 
     async resetPassword(password, code) {
-      await authService.resetPassword({ password, code })
+      await authService.resetPassword({
+        userId: this.resetTarget?.userId,
+        password,
+        code,
+      })
       this.resetTarget = null
     },
 

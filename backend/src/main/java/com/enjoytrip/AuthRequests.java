@@ -9,7 +9,7 @@ public final class AuthRequests {
     public record Profile(@NotBlank @Size(min=2,max=20) String name, @NotBlank @Email @Size(max=100) String email) {}
     public record FindId(@NotBlank String name, @NotBlank @Email String email) {}
     public record Target(@NotBlank String userId, @NotBlank @Email String email) {}
-    public record Reset(@NotBlank String code, @NotBlank String password) {}
+    public record Reset(@NotBlank String userId, @NotBlank String code, @NotBlank String password) {}
     public record Passwords(@NotBlank String currentPassword, @NotBlank String newPassword) {}
     public record Password(@NotBlank String password) {}
 

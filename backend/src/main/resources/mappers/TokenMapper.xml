@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.enjoytrip.TokenMapper">
+<insert id="insertRefresh">INSERT INTO refresh_tokens(token_hash,member_id,expires_at) VALUES(#{hash},#{memberId},#{expiresAt})</insert>
+<select id="findRefreshForUpdate" resultType="com.enjoytrip.TokenMapper$RefreshRow">SELECT member_id, expires_at FROM refresh_tokens WHERE token_hash=#{hash} FOR UPDATE</select>
+<delete id="deleteRefresh">DELETE FROM refresh_tokens WHERE token_hash=#{hash}</delete>
+<delete id="deleteRefreshByMember">DELETE FROM refresh_tokens WHERE member_id=#{memberId}</delete>
+<delete id="deleteExpiredRefresh">DELETE FROM refresh_tokens WHERE expires_at &lt; #{now}</delete>
+<delete id="deleteAllRefresh">DELETE FROM refresh_tokens</delete>
+<delete id="deleteReset">DELETE FROM password_resets WHERE member_id=#{memberId}</delete>
+<insert id="upsertReset">INSERT INTO password_resets(member_id,code,issued_at,attempts) VALUES(#{memberId},#{code},#{issuedAt},0)</insert>
+<select id="findResetForUpdate" resultType="com.enjoytrip.TokenMapper$PasswordReset">SELECT member_id, code, issued_at, attempts FROM password_resets WHERE member_id=#{memberId} FOR UPDATE</select>
+<select id="findReset" resultType="com.enjoytrip.TokenMapper$PasswordReset">SELECT member_id, code, issued_at, attempts FROM password_resets WHERE member_id=#{memberId}</select>
+<update id="increaseResetAttempts">UPDATE password_resets SET attempts=attempts+1 WHERE member_id=#{memberId}</update>
+</mapper>
