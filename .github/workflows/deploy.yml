@@ -94,11 +94,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Prepare SSH
+        env:
+          SSH_KEY: ${{ secrets.OCI_SSH_KEY }}
+          SSH_HOST: ${{ secrets.OCI_HOST }}
+          SSH_USER: ${{ secrets.OCI_USER }}
         run: |
           install -m 700 -d ~/.ssh
-          echo "${{ secrets.OCI_SSH_KEY }}" > ~/.ssh/id_deploy
+          # 줄바꿈(CRLF) 제거, 마지막 개행 보장
+          printf '%s\n' "$SSH_KEY" | tr -d '\r' > ~/.ssh/id_deploy
           chmod 600 ~/.ssh/id_deploy
-          ssh-keyscan -H "${{ secrets.OCI_HOST }}" >> ~/.ssh/known_hosts
+          # 키 형식이 올바른지, 암호가 걸려 있지 않은지 확인 (공개키 지문만 출력)
+          ssh-keygen -y -P "" -f ~/.ssh/id_deploy > /tmp/deploy_key.pub \
+            || { echo "::error::OCI_SSH_KEY 가 올바른 암호 없는 개인키가 아닙니다 (BEGIN/END 줄 포함 전체를 붙여넣었는지 확인)"; exit 1; }
+          echo "Deploy key fingerprint (서버 authorized_keys 의 공개키와 같아야 함):"
+          ssh-keygen -lf /tmp/deploy_key.pub
+          ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts
+          # 접속 테스트: 실패하면 사용자명/공개키 등록 문제
+          ssh -i ~/.ssh/id_deploy -o BatchMode=yes -o ConnectTimeout=15 "$SSH_USER@$SSH_HOST" "echo ssh ok: \$(whoami)@\$(hostname)" \
+            || { echo "::error::SSH 접속 실패: OCI_USER($SSH_USER) 와 서버 ~/.ssh/authorized_keys 의 공개키를 확인하세요"; exit 1; }
       - name: Copy compose file
         run: |
           ssh -i ~/.ssh/id_deploy "${{ secrets.OCI_USER }}@${{ secrets.OCI_HOST }}" "mkdir -p ~/enjoytrip"
