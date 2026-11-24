@@ -34,7 +34,7 @@
 
 ## 실행
 
-기존 README의 관광 DB 적재와 `local,mysql` 설정을 그대로 사용한다. MySQL 프로필은 `db/schema-mysql.sql`, 기본 H2는 `db/schema.sql`로 애플리케이션 테이블을 생성한다. 관광 테이블·데이터는 기존 import 스크립트가 담당한다.
+기존 README의 관광 DB 적재와 `local,mysql` 설정을 그대로 사용한다. MySQL 프로필은 `db/migration/mysql/V1__baseline.sql`, 기본 H2는 `db/migration/h2/V1__baseline.sql`(Flyway)로 애플리케이션 테이블을 생성한다. 관광 테이블·데이터는 기존 import 스크립트가 담당한다.
 
 ```powershell
 cd backend

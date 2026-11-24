@@ -49,3 +49,7 @@ data/
 .codex-tmp/
 *.mv.db
 *.trace.db
+
+# 블루그린 배포 상태(로컬 테스트용)
+upstream/
+.deploy-state

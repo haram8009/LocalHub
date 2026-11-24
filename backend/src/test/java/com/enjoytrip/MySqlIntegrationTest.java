@@ -23,7 +23,6 @@ abstract class MySqlIntegrationTest {
         registry.add("spring.datasource.username", DATABASE::username);
         registry.add("spring.datasource.password", DATABASE::password);
         registry.add("spring.datasource.driver-class-name", () -> "com.mysql.cj.jdbc.Driver");
-        registry.add("spring.sql.init.schema-locations", () -> "classpath:db/schema-mysql.sql");
     }
 
     private record TestDatabase(String serverUrl, String schema, String username, String password) {

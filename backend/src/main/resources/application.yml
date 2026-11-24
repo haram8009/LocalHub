@@ -11,8 +11,14 @@ spring:
     password: ${DB_PASSWORD:}
   sql:
     init:
-      mode: always
-      schema-locations: classpath:db/schema.sql
+      mode: never
+  flyway:
+    enabled: true
+    # db/migration/mysql, db/migration/h2 (DB 종류별 SQL)
+    locations: classpath:db/migration/{vendor}
+    # 관광지 테이블만 있고 Flyway 이력이 없는 기존 DB도 V1(IF NOT EXISTS)을 적용해 이어받습니다.
+    baseline-on-migrate: true
+    baseline-version: 0
   jackson:
     deserialization:
       fail-on-unknown-properties: false

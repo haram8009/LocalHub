@@ -1,7 +1,4 @@
 spring:
-  sql:
-    init:
-      schema-locations: classpath:db/schema-mysql.sql
   datasource:
     url: ${DB_URL:jdbc:mysql://localhost:3306/ssafy_trip?connectionTimeZone=Asia/Seoul&characterEncoding=UTF-8}
     username: ${DB_USERNAME:root}

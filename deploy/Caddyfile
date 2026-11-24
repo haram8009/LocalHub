@@ -11,20 +11,10 @@
 		-Server
 	}
 
-	handle /api/* {
-		reverse_proxy backend:8080
-	}
+	# 헬스체크·메트릭은 내부 전용입니다.
+	@internal path /actuator /actuator/*
+	respond @internal 404
 
-	handle {
-		root * /srv
-		# SPA: 존재하지 않는 경로는 index.html 로 (Vue Router history 모드)
-		try_files {path} /index.html
-		file_server
-	}
-
-	# 해시가 붙은 정적 자원은 오래 캐시하고 index.html 은 항상 재검증합니다.
-	@assets path /assets/*
-	header @assets Cache-Control "public, max-age=31536000, immutable"
-	@index path / /index.html
-	header @index Cache-Control "no-cache"
+	# 활성 색(blue/green)의 reverse_proxy 설정. deploy.sh 가 이 디렉터리의 파일을 교체합니다.
+	import /etc/caddy/upstream/*.caddy
 }

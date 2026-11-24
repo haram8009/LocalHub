@@ -1,10 +1,36 @@
-# 운영용 Compose. 서버에는 이 파일과 .env 만 있으면 됩니다(이미지는 레지스트리에서 pull).
-# 로컬에서 빌드해 보려면: docker compose -f docker-compose.yml -f docker-compose.local.yml up --build
+# 운영용 Compose (블루그린). 서버에는 이 파일, Caddyfile, deploy.sh, rollback.sh, .env 가 있으면 됩니다.
+# 배포/롤백은 직접 compose 를 호출하지 말고 ./deploy.sh, ./rollback.sh 를 사용하세요.
+# 로컬 검증: docker compose -f docker-compose.yml -f docker-compose.local.yml --env-file deploy/local.env ...
 name: enjoytrip
+
+# 블루/그린 백엔드 공통 설정 (프론트가 jar 안에 들어 있어 화면과 API 가 한 단위로 배포됩니다)
+x-backend: &backend
+  restart: unless-stopped
+  depends_on:
+    db:
+      condition: service_healthy
+  environment:
+    SPRING_PROFILES_ACTIVE: mysql
+    DB_URL: jdbc:mysql://db:3306/ssafy_trip?connectionTimeZone=Asia/Seoul&characterEncoding=UTF-8
+    DB_USERNAME: ${DB_USERNAME:-ssafy}
+    DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+    # 두 색이 같은 키를 써야 전환해도 로그인이 유지됩니다.
+    JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required (32+ bytes)}
+    JWT_COOKIE_SECURE: ${JWT_COOKIE_SECURE:-true}
+    KAKAO_REST_API_KEY: ${KAKAO_REST_API_KEY:-}
+    SEED_DEMO: ${SEED_DEMO:-false}
+    JAVA_OPTS: ${JAVA_OPTS:--XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError}
+    TZ: Asia/Seoul
+  healthcheck:
+    test: ["CMD-SHELL", "curl -fsS http://localhost:8080/actuator/health/readiness || exit 1"]
+    interval: 10s
+    timeout: 5s
+    retries: 6
+    start_period: 40s
 
 services:
   db:
-    image: ${IMAGE_PREFIX:?IMAGE_PREFIX is required}-db:${TAG:-latest}
+    image: ${IMAGE_PREFIX:?IMAGE_PREFIX is required}-db:${DB_TAG:-latest}
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?DB_ROOT_PASSWORD is required}
@@ -23,36 +49,19 @@ services:
       # 첫 기동에는 관광지 덤프 적재로 1~3분이 걸립니다.
       start_period: 180s
 
-  backend:
-    image: ${IMAGE_PREFIX}-backend:${TAG:-latest}
-    restart: unless-stopped
-    depends_on:
-      db:
-        condition: service_healthy
-    environment:
-      SPRING_PROFILES_ACTIVE: mysql
-      DB_URL: jdbc:mysql://db:3306/ssafy_trip?connectionTimeZone=Asia/Seoul&characterEncoding=UTF-8
-      DB_USERNAME: ${DB_USERNAME:-ssafy}
-      DB_PASSWORD: ${DB_PASSWORD}
-      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required (32+ bytes)}
-      JWT_COOKIE_SECURE: ${JWT_COOKIE_SECURE:-true}
-      KAKAO_REST_API_KEY: ${KAKAO_REST_API_KEY:-}
-      SEED_DEMO: ${SEED_DEMO:-false}
-      JAVA_OPTS: ${JAVA_OPTS:--XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError}
-      TZ: Asia/Seoul
-    healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/actuator/health/readiness || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 6
-      start_period: 40s
+  backend-blue:
+    <<: *backend
+    image: ${IMAGE_PREFIX}-app:${BLUE_TAG:-latest}
 
-  web:
-    image: ${IMAGE_PREFIX}-web:${TAG:-latest}
+  backend-green:
+    <<: *backend
+    image: ${IMAGE_PREFIX}-app:${GREEN_TAG:-latest}
+
+  # TLS 종단과 리버스 프록시. 활성 색은 ./upstream/active.caddy 가 가리키며,
+  # 컨테이너를 재시작하지 않고 `caddy reload`(연결 유지)로 전환합니다.
+  proxy:
+    image: caddy:2-alpine
     restart: unless-stopped
-    depends_on:
-      backend:
-        condition: service_healthy
     environment:
       SITE_ADDRESS: ${SITE_ADDRESS:?SITE_ADDRESS is required (domain, or :80 for local)}
     ports:
@@ -60,10 +69,13 @@ services:
       - "443:443"
       - "443:443/udp"
     volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./upstream:/etc/caddy/upstream:ro
       - caddy_data:/data
       - caddy_config:/config
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:80/ || wget -q --spider --no-check-certificate https://localhost/ || exit 1"]
+      # Caddy 관리 API(컨테이너 내부 전용)로 상태를 확인합니다.
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:2019/config/ || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 5
