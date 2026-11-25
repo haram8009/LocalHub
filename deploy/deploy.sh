@@ -6,7 +6,8 @@
 #   3) Caddy 의 upstream 을 새 색으로 바꿔 `caddy reload` (연결 유지)
 #   4) 이전 색은 DRAIN_SECONDS 뒤에 정지(삭제하지 않음 → rollback.sh 로 즉시 복귀 가능)
 #
-# 환경변수: DRAIN_SECONDS(기본 30), HEALTH_TIMEOUT(기본 240초), SKIP_PULL=1(로컬 빌드 이미지 사용)
+# 환경변수: DRAIN_SECONDS(기본 30), HEALTH_TIMEOUT(기본 240초), WARMUP_SECONDS(기본 20, 0이면 생략),
+#           SKIP_PULL=1(로컬 빌드 이미지 사용)
 set -euo pipefail
 
 NEW_TAG="${1:?usage: deploy.sh <image-tag>}"
@@ -55,6 +56,7 @@ if ! smoke_ok; then
   exit 1
 fi
 
+warm_up "$TARGET"
 switch_to "$TARGET"
 OLD="${ACTIVE:-none}"
 save_state "$TARGET"
@@ -65,4 +67,5 @@ if [ "$OLD" != "none" ]; then
   sleep "$DRAIN_SECONDS"
   compose stop "backend-$OLD"
 fi
+prune_old_images "backend-$TARGET"
 compose ps

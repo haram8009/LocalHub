@@ -16,6 +16,8 @@ export BLUE_TAG GREEN_TAG
 
 compose up -d --no-deps --no-recreate "backend-$TARGET"
 wait_healthy "backend-$TARGET" "$HEALTH_TIMEOUT" || { echo "::error::$TARGET 가 healthy 가 아닙니다. 활성 색($ACTIVE)은 그대로 둡니다." >&2; compose logs --tail=80 "backend-$TARGET" >&2; compose rm -sf "backend-$TARGET" >&2 || true; exit 1; }
+# 정지돼 있던 색은 JVM 이 차갑다. 급하면 WARMUP_SECONDS=0 으로 바로 넘길 수 있다.
+warm_up "$TARGET"
 switch_to "$TARGET"
 OLD="$ACTIVE"
 save_state "$TARGET"
