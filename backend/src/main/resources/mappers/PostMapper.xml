@@ -27,5 +27,25 @@
 <select id="findCourseSummaries" resultType="com.enjoytrip.PostRepository$CourseSummary">SELECT p.*, (SELECT COUNT(*) FROM post_locations l WHERE l.post_id=p.id) AS location_count FROM travel_posts p WHERE p.id IN <include refid="ids"/></select>
 <select id="findCourseTimestamps" resultType="com.enjoytrip.PostRepository$CourseTimestamp">SELECT id,created_at FROM travel_posts WHERE id IN <include refid="ids"/></select>
 <select id="findSearchMetadata" resultType="com.enjoytrip.PostRepository$SearchMetadata">SELECT id,created_at FROM travel_posts WHERE id IN <include refid="ids"/> AND (#{category}='' OR category=#{category}) AND (#{author}='' OR author_id=#{author})</select>
-<select id="findNearbyPoints" resultType="com.enjoytrip.PostRepository$NearbyPoint">SELECT l.*,p.created_at FROM post_locations l JOIN travel_posts p ON p.id=l.post_id WHERE latitude BETWEEN #{minLatitude} AND #{maxLatitude} AND longitude BETWEEN #{minLongitude} AND #{maxLongitude} ORDER BY post_id,visit_order</select>
+<!-- 상자 안 좌표만 (latitude,longitude,visit_order) 인덱스로 읽어 하버사인 거리를 DB에서 계산하고,
+     글마다 가장 가까운 장소(동률이면 앞 순서) 하나 → 거리, 최신, id 순 상위 limit 개만 본문 열과 함께 돌려줍니다. -->
+<select id="findNearestPoints" resultType="com.enjoytrip.PostRepository$NearbyPoint">
+SELECT l.*, best.created_at FROM (
+ SELECT ranked.post_id, ranked.visit_index, ranked.distance_km, p.created_at FROM (
+  SELECT d.post_id, d.visit_index, d.distance_km,
+   ROW_NUMBER() OVER (PARTITION BY d.post_id ORDER BY d.distance_km, d.visit_order) AS rn
+  FROM (
+   SELECT post_id, visit_index, visit_order,
+    2 * 6371 * ASIN(SQRT(LEAST(1, POWER(SIN(RADIANS(latitude - #{latitude}) / 2), 2)
+     + COS(RADIANS(#{latitude})) * COS(RADIANS(latitude)) * POWER(SIN(RADIANS(longitude - #{longitude}) / 2), 2)))) AS distance_km
+   FROM post_locations
+   WHERE latitude BETWEEN #{minLatitude} AND #{maxLatitude} AND longitude BETWEEN #{minLongitude} AND #{maxLongitude}
+  ) d WHERE d.distance_km &lt;= #{radiusKm}
+ ) ranked JOIN travel_posts p ON p.id = ranked.post_id
+ WHERE ranked.rn = 1
+ ORDER BY ranked.distance_km, p.created_at DESC, ranked.post_id DESC
+ LIMIT #{limit}
+) best JOIN post_locations l ON l.post_id = best.post_id AND l.visit_index = best.visit_index
+ORDER BY best.distance_km, best.created_at DESC, best.post_id DESC
+</select>
 </mapper>

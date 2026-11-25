@@ -25,5 +25,7 @@ public interface PostMapper {
  List<PostRepository.CourseSummary> findCourseSummaries(@Param("ids") Collection<Long> ids);
  List<PostRepository.CourseTimestamp> findCourseTimestamps(@Param("ids") Collection<Long> ids);
  List<PostRepository.SearchMetadata> findSearchMetadata(@Param("ids") Collection<Long> ids,@Param("category") String category,@Param("author") String author);
- List<PostRepository.NearbyPoint> findNearbyPoints(@Param("minLatitude") double minLatitude,@Param("maxLatitude") double maxLatitude,@Param("minLongitude") double minLongitude,@Param("maxLongitude") double maxLongitude);
+ List<PostRepository.NearbyPoint> findNearestPoints(@Param("latitude") double latitude,@Param("longitude") double longitude,
+  @Param("radiusKm") double radiusKm,@Param("minLatitude") double minLatitude,@Param("maxLatitude") double maxLatitude,
+  @Param("minLongitude") double minLongitude,@Param("maxLongitude") double maxLongitude,@Param("limit") int limit);
 }

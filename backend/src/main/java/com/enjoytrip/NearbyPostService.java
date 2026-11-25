@@ -29,24 +29,15 @@ public class NearbyPostService {
         double angularRadius = NEARBY_RADIUS_KM / EARTH_RADIUS_KM;
         double latitudeDelta = Math.toDegrees(angularRadius);
         double longitudeDelta = Math.toDegrees(Math.asin(Math.sin(angularRadius) / Math.cos(Math.toRadians(latitude))));
-        // Read only points in the enclosing box; a precise radius check removes its corners.
-        var points = posts.findNearbyPoints(Math.max(MIN_LATITUDE, latitude - latitudeDelta),
-            Math.min(MAX_LATITUDE, latitude + latitudeDelta), Math.max(MIN_LONGITUDE, longitude - longitudeDelta),
-            Math.min(MAX_LONGITUDE, longitude + longitudeDelta));
-        var nearestByPost = new HashMap<Long, Ranked>();
-        for (var point : points) {
-            if (point.getLatitude() == null || point.getLongitude() == null || !validCoordinate(point.getLatitude(), point.getLongitude())) continue;
-            double distanceKm = distanceKm(latitude, longitude, point.getLatitude(), point.getLongitude());
-            if (distanceKm > NEARBY_RADIUS_KM) continue;
-            var nearest = nearestByPost.get(point.getPostId());
-            if (nearest == null || distanceKm < nearest.distanceKm())
-                nearestByPost.put(point.getPostId(), new Ranked(point.getPostId(), point.getCreatedAt(), distanceKm, point));
-        }
-        var top = nearestByPost.values().stream()
-            .sorted(Comparator.comparingDouble(Ranked::distanceKm)
-                .thenComparing(Ranked::createdAt, Comparator.nullsLast(Comparator.reverseOrder()))
-                .thenComparing(Ranked::id, Comparator.reverseOrder()))
-            .limit(limit).toList();
+        // 상자(좌표 인덱스 범위)로 후보를 줄이고, 반경 판정·글별 최근접 선택·정렬·상위 N 은 DB가 합니다.
+        // 예전에는 상자 안 장소 전체(서울 기준 2만여 행, 본문 열 포함)를 받아 자바에서 골랐습니다.
+        var points = posts.findNearestPoints(latitude, longitude, NEARBY_RADIUS_KM,
+            Math.max(MIN_LATITUDE, latitude - latitudeDelta), Math.min(MAX_LATITUDE, latitude + latitudeDelta),
+            Math.max(MIN_LONGITUDE, longitude - longitudeDelta), Math.min(MAX_LONGITUDE, longitude + longitudeDelta), limit);
+        var top = points.stream()
+            .map(point -> new Ranked(point.getPostId(), point.getCreatedAt(),
+                distanceKm(latitude, longitude, point.getLatitude(), point.getLongitude()), point))
+            .toList();
         if (top.isEmpty()) return Map.of("items", List.of());
 
         var summaries = posts.findCourseSummaries(top.stream().map(Ranked::id).toList()).stream()

@@ -43,7 +43,10 @@ public class PostRepository {
  public List<CourseSummary> findCourseSummaries(Collection<Long> ids) { return ids.isEmpty()?List.of():mapper.findCourseSummaries(ids); }
  public List<CourseTimestamp> findCourseTimestamps(Collection<Long> ids) { return ids.isEmpty()?List.of():mapper.findCourseTimestamps(ids); }
  public List<SearchMetadata> findSearchMetadata(Collection<Long> ids,String category,String author) { return ids.isEmpty()?List.of():mapper.findSearchMetadata(ids,category,author); }
- public List<NearbyPoint> findNearbyPoints(double a,double b,double c,double d) { return mapper.findNearbyPoints(a,b,c,d); }
+ /** 반경 안에서 글마다 가장 가까운 장소 하나를 골라 거리·최신순 상위 limit 개만 돌려줍니다. */
+ public List<NearbyPoint> findNearestPoints(double latitude,double longitude,double radiusKm,double minLatitude,double maxLatitude,double minLongitude,double maxLongitude,int limit) {
+  return mapper.findNearestPoints(latitude,longitude,radiusKm,minLatitude,maxLatitude,minLongitude,maxLongitude,limit);
+ }
  public static class CoursePoint {
 public Long postId; public Long getPostId() { return postId; }
 public String contentId; public String getContentId() { return contentId; }
