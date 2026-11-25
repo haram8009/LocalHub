@@ -8,9 +8,13 @@
 <insert id="add">INSERT INTO post_search_postings(term_hash,post_id,term,title_hit,body_hit) VALUES(#{termHash},#{post.id},#{term},#{titleHit},#{bodyHit})</insert>
 <insert id="addTerm" databaseId="mysql">INSERT IGNORE INTO post_search_terms(term_hash,term) VALUES(#{termHash},#{term})</insert>
 <insert id="addTerm" databaseId="h2">MERGE INTO post_search_terms(term_hash,term) KEY(term_hash) VALUES(#{termHash},#{term})</insert>
-<!-- 사전에 없는 단어를 postings 에서 채웁니다. 기동 시 실행: V2 이전 버전(사전을 모름)이 쓴 글도 반영됩니다. -->
-<insert id="syncTerms" databaseId="mysql">INSERT IGNORE INTO post_search_terms(term_hash,term) SELECT p.term_hash,p.term FROM post_search_postings p WHERE p.post_id=(SELECT MIN(q.post_id) FROM post_search_postings q WHERE q.term_hash=p.term_hash) AND NOT EXISTS (SELECT 1 FROM post_search_terms t WHERE t.term_hash=p.term_hash)</insert>
-<insert id="syncTerms" databaseId="h2">MERGE INTO post_search_terms(term_hash,term) KEY(term_hash) SELECT p.term_hash,p.term FROM post_search_postings p WHERE p.post_id=(SELECT MIN(q.post_id) FROM post_search_postings q WHERE q.term_hash=p.term_hash) AND NOT EXISTS (SELECT 1 FROM post_search_terms t WHERE t.term_hash=p.term_hash)</insert>
+<!-- 사전에 없는 단어를 postings 에서 찾습니다. 기동 시 실행: V2 이전 버전(사전을 모름)이 쓴 글도 반영됩니다.
+     GROUP BY term_hash + MIN(post_id) 는 PK(term_hash, post_id) 를 단어 수(수만)만큼만 건너뛰며 읽고(loose index scan),
+     잠그지 않는 일반 SELECT 라서 그동안 들어오는 글쓰기를 막지 않습니다.
+     (예전: 행마다 MIN 서브쿼리를 도는 INSERT ... SELECT 라 100만 행에서 9분 넘게 걸리고 읽은 행을 잠갔습니다.) -->
+<select id="findMissingTerms" resultType="com.enjoytrip.PostSearchIndexRepository$DictionaryTerm">SELECT p.term_hash,p.term FROM (SELECT term_hash,MIN(post_id) AS post_id FROM post_search_postings GROUP BY term_hash) m JOIN post_search_postings p ON p.term_hash=m.term_hash AND p.post_id=m.post_id WHERE NOT EXISTS (SELECT 1 FROM post_search_terms t WHERE t.term_hash=m.term_hash)</select>
+<insert id="addTerms" databaseId="mysql">INSERT IGNORE INTO post_search_terms(term_hash,term) VALUES <foreach collection="terms" item="t" separator=",">(#{t.termHash},#{t.term})</foreach></insert>
+<insert id="addTerms" databaseId="h2">MERGE INTO post_search_terms(term_hash,term) KEY(term_hash) VALUES <foreach collection="terms" item="t" separator=",">(#{t.termHash},#{t.term})</foreach></insert>
 <delete id="remove">DELETE FROM post_search_postings WHERE post_id=#{id}</delete>
 <delete id="removeByAuthor">DELETE FROM post_search_postings WHERE post_id IN (SELECT id FROM travel_posts WHERE author_id=#{id})</delete>
 <delete id="clear">DELETE FROM post_search_postings</delete>

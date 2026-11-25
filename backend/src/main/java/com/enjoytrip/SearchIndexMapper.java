@@ -6,7 +6,8 @@ public interface SearchIndexMapper {
  List<PostSearchIndexRepository.Posting> findContaining(@Param("patterns") List<String> patterns);
  int add(PostSearchTerm term);
  int addTerm(PostSearchTerm term);
- int syncTerms();
+ List<PostSearchIndexRepository.DictionaryTerm> findMissingTerms();
+ int addTerms(@Param("terms") List<PostSearchIndexRepository.DictionaryTerm> terms);
  int remove(@Param("id") long id);
  int removeByAuthor(@Param("id") String id);
  int clear();
