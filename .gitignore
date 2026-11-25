@@ -18,6 +18,16 @@ coverage
 .vscode/*
 !.vscode/extensions.json
 .idea
+*.iml
+
+# Eclipse
+.classpath
+.project
+.settings/
+bin/
+
+# Claude Code 로컬 설정
+.claude/
 *.suo
 *.ntvs*
 *.njsproj
@@ -39,8 +49,12 @@ __screenshots__/
 *.timestamp-*-*.mjs
 .vite/
 
-# Environment Variables
+# Environment Variables (예시·테스트 값만 커밋)
 .env
+.env.*
+!.env.example
+!.env.*.example
+!.env.test
 target/
 build/
 .gradle/
