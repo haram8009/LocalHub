@@ -90,8 +90,10 @@ chmod 600 .env
 1. 지금 서비스 중이 아닌 색(예: green)에 새 이미지를 띄웁니다. 기존 색(blue)은 계속 서비스합니다.
 2. 새 색이 `healthy`(readiness)가 될 때까지 기다립니다.
 3. 전환 전 **스모크 테스트**: 새 색의 화면(`/`)과 API(`/api/posts`)가 응답하는지 확인합니다.
-4. 통과하면 `upstream/active.caddy`를 새 색으로 바꾸고 `caddy reload`합니다. 진행 중인 연결은 끊기지 않습니다.
-5. 이전 색은 30초(`DRAIN_SECONDS`) 뒤 **정지**합니다(삭제하지 않음 → 즉시 롤백 가능).
+4. **워밍업**: 새 색에 읽기 요청을 20초(`WARMUP_SECONDS`) 보내 JVM을 데웁니다. 차가운 JVM으로 바로 넘기면 첫 20초 동안 응답이 4~9초로 느려집니다([LOAD_TEST.md](LOAD_TEST.md)).
+5. `upstream/active.caddy`를 새 색으로 바꾸고 `caddy reload`합니다. 진행 중인 연결은 끊기지 않습니다.
+6. 이전 색은 30초(`DRAIN_SECONDS`) 뒤 **정지**합니다(삭제하지 않음 → 즉시 롤백 가능).
+7. 두 색이 쓰는 태그를 뺀 옛 앱 이미지를 지워 디스크가 차지 않게 합니다(`KEEP_OLD_IMAGES=1`이면 생략).
 
 2~3단계에서 실패하면 새 색을 제거하고 종료합니다. **기존 색은 그대로 서비스되고 워크플로만 실패로 표시됩니다.**
 
@@ -125,7 +127,7 @@ cd ~/enjoytrip
 bash rollback.sh
 ```
 
-직전 색을 다시 띄워 healthy를 확인한 뒤 트래픽을 넘기고, 문제가 있던 색을 정지합니다. 롤백은 한 단계 전 버전까지만 가능합니다. 더 이전 버전이 필요하면 `bash deploy.sh <그 커밋 SHA>`로 해당 이미지를 다시 배포하세요.
+직전 색을 다시 띄워 healthy를 확인하고 20초 워밍업한 뒤 트래픽을 넘기고, 문제가 있던 색을 정지합니다. 1초가 급하면 `WARMUP_SECONDS=0 bash rollback.sh`로 워밍업을 건너뜁니다(대신 첫 20초가 느립니다). 롤백은 한 단계 전 버전까지만 가능합니다. 더 이전 버전이 필요하면 `bash deploy.sh <그 커밋 SHA>`로 해당 이미지를 다시 배포하세요.
 
 ## 8. DB 스키마 변경 (Flyway)
 
@@ -182,6 +184,8 @@ Docker Desktop(또는 Docker Engine)을 켠 뒤, 저장소 루트에서 Git Bash
 # 앱 이미지 빌드(수 분 소요). 두 번째 태그는 "새 버전" 시뮬레이션용입니다.
 docker build -t enjoytrip-local-app:v1 -f deploy/app.Dockerfile .
 docker tag enjoytrip-local-app:v1 enjoytrip-local-app:v2
+# 빌드 캐시는 빌드마다 수 GB씩 쌓입니다(Docker Desktop 디스크는 줄어들지 않음). 빌드 직후 비우세요.
+docker builder prune -af
 
 export DEPLOY_DIR="$PWD" COMPOSE_PATH_SEPARATOR=: COMPOSE_FILE=docker-compose.yml:docker-compose.local.yml \
        COMPOSE_ENV_FILES=deploy/local.env SKIP_PULL=1 DRAIN_SECONDS=5 MSYS_NO_PATHCONV=1
