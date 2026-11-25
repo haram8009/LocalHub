@@ -4,6 +4,8 @@ k6로 실제 사용 비율을 흉내 낸 트래픽을 보내고 Prometheus/Grafa
 
 ## 결과 요약
 
+> 각 개선의 진단 근거, 검토한 대안, 적용 방법은 [BOTTLENECK_IMPROVEMENT.md](BOTTLENECK_IMPROVEMENT.md)에 자세히 정리했습니다.
+
 같은 부하(초당 25요청, 2분)에서의 p95 응답 시간입니다.
 
 | 단계 | 전체 p95 | 검색 | 주변 추천 | 글쓰기 | 실패율 |
